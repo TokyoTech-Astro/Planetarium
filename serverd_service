@@ -1,0 +1,11 @@
+[Unit]
+Description=Server Daemon
+
+[Service]
+ExecStart=/usr/local/lib/serverd.py
+Restart=always
+Type=simple
+User=pi
+
+[Install]
+WantedBy=multi-user.target
