@@ -27,9 +27,10 @@ class StepperMotor:
         GPIO.setup(self.p2, GPIO.OUT)
         GPIO.setup(self.p3, GPIO.OUT)
         GPIO.setup(self.p4, GPIO.OUT)
+        return self
 
     
-    def __exit__(self):
+    def __exit__(self, type, value, traceback):
         GPIO.cleanup()
     
 
