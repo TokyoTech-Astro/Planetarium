@@ -30,10 +30,10 @@ class StepperMotor:
 
     
     def __exit__(self):
-        GPIO.cleanup
+        GPIO.cleanup()
     
 
-    def rRotate(self, step, t):
+    def rRotate(self, step):
         for i in range(step):
             GPIO.output(self.p1, H)
             GPIO.output(self.p2, L)
@@ -60,7 +60,7 @@ class StepperMotor:
             time.sleep(self.t)
 
 
-    def fRotate(self, step, t):
+    def fRotate(self, step):
         for i in range(step):
             GPIO.output(self.p1, H)
             GPIO.output(self.p2, H)
@@ -85,3 +85,7 @@ class StepperMotor:
             GPIO.output(self.p3, L)
             GPIO.output(self.p4, H)
             time.sleep(self.t)
+
+if __name__ == "__main__":
+    with StepperMotor(GPIO.BCM, 4, 17, 27, 22, 0.004) as m:
+        m.rRotate(1200)
