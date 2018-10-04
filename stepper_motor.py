@@ -19,7 +19,7 @@ class StepperMotor:
 
     def setInterval(self, t):
         self.t = t
-        
+    
     
     def __enter__(self):
         GPIO.setmode(self.pMode)
@@ -86,6 +86,7 @@ class StepperMotor:
             GPIO.output(self.p3, L)
             GPIO.output(self.p4, H)
             time.sleep(self.t)
+
 
 if __name__ == "__main__":
     with StepperMotor(GPIO.BCM, 4, 17, 27, 22, 0.004) as m:
