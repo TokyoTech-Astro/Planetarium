@@ -1,4 +1,5 @@
 import time
+import queue
 import RPi.GPIO as GPIO
 
 
@@ -8,7 +9,8 @@ L = GPIO.LOW
 # 4, 17, 27, 22
 
 class StepperMotor:
-    def __init__(self, t, p1=21, p2=16, p3=12, p4=7):
+    def __init__(self, t, queue: queue.Queue,  p1=21, p2=16, p3=12, p4=7):
+        self.queue = queue
         self.pin = [p1, p2, p3, p4]
         self.t = t
 
@@ -19,73 +21,74 @@ class StepperMotor:
     
     def __enter__(self):
         for i in range(4):
-            GPIO.setup(self.pin[i], GPIO.OUT)
+            self.queue.put(("setup", self.pin[i], GPIO.OUT))
         self.off()
         return self
 
     
     def __exit__(self, type, value, traceback):
         for i in range(4):
+            self.queue.put(("cleanup", self.pin[i], None))
             GPIO.cleanup(self.pin[i])
 
 
     def off(self):
         for i in range(4):
-            GPIO.output(self.pin[i], H)
+            self.queue.put(("output", self.pin[i], H))
     
 
     def rRotate(self, step):
         for i in range(step):
-            GPIO.output(self.pin[0], H)
-            GPIO.output(self.pin[1], L)
-            GPIO.output(self.pin[2], L)
-            GPIO.output(self.pin[3], H)
+            self.queue.put(("output", self.pin[0], H))
+            self.queue.put(("output", self.pin[1], L))
+            self.queue.put(("output", self.pin[2], L))
+            self.queue.put(("output", self.pin[3], H))
             time.sleep(self.t)
 
-            GPIO.output(self.pin[0], L)
-            GPIO.output(self.pin[1], L)
-            GPIO.output(self.pin[2], H)
-            GPIO.output(self.pin[3], H)
+            self.queue.put(("output", self.pin[0], L))
+            self.queue.put(("output", self.pin[1], L))
+            self.queue.put(("output", self.pin[2], H))
+            self.queue.put(("output", self.pin[3], H))
             time.sleep(self.t)
 
-            GPIO.output(self.pin[0], L)
-            GPIO.output(self.pin[1], H)
-            GPIO.output(self.pin[2], H)
-            GPIO.output(self.pin[3], L)
+            self.queue.put(("output", self.pin[0], L))
+            self.queue.put(("output", self.pin[1], H))
+            self.queue.put(("output", self.pin[2], H))
+            self.queue.put(("output", self.pin[3], L))
             time.sleep(self.t)
 
-            GPIO.output(self.pin[0], H)
-            GPIO.output(self.pin[1], H)
-            GPIO.output(self.pin[2], L)
-            GPIO.output(self.pin[3], L)
+            self.queue.put(("output", self.pin[0], H))
+            self.queue.put(("output", self.pin[1], H))
+            self.queue.put(("output", self.pin[2], L))
+            self.queue.put(("output", self.pin[3], L))
             time.sleep(self.t)
         self.off()
 
 
     def fRotate(self, step):
         for i in range(step):
-            GPIO.output(self.pin[0], H)
-            GPIO.output(self.pin[1], H)
-            GPIO.output(self.pin[2], L)
-            GPIO.output(self.pin[3], L)
+            self.queue.put(("output", self.pin[0], H))
+            self.queue.put(("output", self.pin[1], H))
+            self.queue.put(("output", self.pin[2], L))
+            self.queue.put(("output", self.pin[3], L))
             time.sleep(self.t)
 
-            GPIO.output(self.pin[0], L)
-            GPIO.output(self.pin[1], H)
-            GPIO.output(self.pin[2], H)
-            GPIO.output(self.pin[3], L)
+            self.queue.put(("output", self.pin[0], L))
+            self.queue.put(("output", self.pin[1], H))
+            self.queue.put(("output", self.pin[2], H))
+            self.queue.put(("output", self.pin[3], L))
             time.sleep(self.t)
 
-            GPIO.output(self.pin[0], L)
-            GPIO.output(self.pin[1], L)
-            GPIO.output(self.pin[2], H)
-            GPIO.output(self.pin[3], H)
+            self.queue.put(("output", self.pin[0], L))
+            self.queue.put(("output", self.pin[1], L))
+            self.queue.put(("output", self.pin[2], H))
+            self.queue.put(("output", self.pin[3], H))
             time.sleep(self.t)
 
-            GPIO.output(self.pin[0], H)
-            GPIO.output(self.pin[1], L)
-            GPIO.output(self.pin[2], L)
-            GPIO.output(self.pin[3], H)
+            self.queue.put(("output", self.pin[0], H))
+            self.queue.put(("output", self.pin[1], L))
+            self.queue.put(("output", self.pin[2], L))
+            self.queue.put(("output", self.pin[3], H))
             time.sleep(self.t)
         self.off()
 

@@ -4,9 +4,9 @@ from gpio_maintaner import GPIOMaintainer
 import RPi.GPIO as GPIO
 
 
-class GPIOMaintainerForServer(GPIOMaintainer):
+class GPIOMaintainerForServer():
     def __init__(self):
-        super.__init__()
+        GPIO.setmode(GPIO.BCM)
 
 
     def __enter__(self):
@@ -16,7 +16,7 @@ class GPIOMaintainerForServer(GPIOMaintainer):
 
 
     def __exit__(self, type, value, traceback):
-        super.__init__()
+        GPIO.cleanup()
 
 
 
