@@ -1,21 +1,22 @@
 import sys
 import socket
+from gpio_maintaner import GPIOMaintainer
 import RPi.GPIO as GPIO
 
 
-class GPIOMaintainer:
+class GPIOMaintainerForServer(GPIOMaintainer):
     def __init__(self):
-        pass
+        super.__init__()
 
 
     def __enter__(self):
-        GPIO.setmode(GPIO.BCM)
         for i in range(2, 27):
             GPIO.setup(i, GPIO.OUT)
+        return self
 
 
     def __exit__(self, type, value, traceback):
-        GPIO.cleanup()
+        super.__init__()
 
 
 
@@ -34,7 +35,7 @@ class StarSphereServer:
 
 
     def serve(self):
-        with GPIOMaintainer():
+        with GPIOMaintainerForServer():
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.bind(('', self.port))
                 s.listen(self.listen)

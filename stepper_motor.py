@@ -8,12 +8,8 @@ L = GPIO.LOW
 # 4, 17, 27, 22
 
 class StepperMotor:
-    def __init__(self, pMode, p1, p2, p3, p4, t):
-        self.pMode = pMode
-        self.p1 = p1
-        self.p2 = p2
-        self.p3 = p3
-        self.p4 = p4
+    def __init__(self, t, p1=21, p2=16, p3=12, p4=7):
+        self.pin = [p1, p2, p3, p4]
         self.t = t
 
 
@@ -22,72 +18,78 @@ class StepperMotor:
     
     
     def __enter__(self):
-        GPIO.setmode(self.pMode)
-        GPIO.setup(self.p1, GPIO.OUT)
-        GPIO.setup(self.p2, GPIO.OUT)
-        GPIO.setup(self.p3, GPIO.OUT)
-        GPIO.setup(self.p4, GPIO.OUT)
+        for i in range(4):
+            GPIO.setup(self.pin[i], GPIO.OUT)
+        self.off()
         return self
 
     
     def __exit__(self, type, value, traceback):
-        GPIO.cleanup()
+        for i in range(4):
+            GPIO.cleanup(self.pin[i])
+
+
+    def off(self):
+        for i in range(4):
+            GPIO.output(self.pin[i], H)
     
 
     def rRotate(self, step):
         for i in range(step):
-            GPIO.output(self.p1, H)
-            GPIO.output(self.p2, L)
-            GPIO.output(self.p3, L)
-            GPIO.output(self.p4, H)
+            GPIO.output(self.pin[0], H)
+            GPIO.output(self.pin[1], L)
+            GPIO.output(self.pin[2], L)
+            GPIO.output(self.pin[3], H)
             time.sleep(self.t)
 
-            GPIO.output(self.p1, L)
-            GPIO.output(self.p2, L)
-            GPIO.output(self.p3, H)
-            GPIO.output(self.p4, H)
+            GPIO.output(self.pin[0], L)
+            GPIO.output(self.pin[1], L)
+            GPIO.output(self.pin[2], H)
+            GPIO.output(self.pin[3], H)
             time.sleep(self.t)
 
-            GPIO.output(self.p1, L)
-            GPIO.output(self.p2, H)
-            GPIO.output(self.p3, H)
-            GPIO.output(self.p4, L)
+            GPIO.output(self.pin[0], L)
+            GPIO.output(self.pin[1], H)
+            GPIO.output(self.pin[2], H)
+            GPIO.output(self.pin[3], L)
             time.sleep(self.t)
 
-            GPIO.output(self.p1, H)
-            GPIO.output(self.p2, H)
-            GPIO.output(self.p3, L)
-            GPIO.output(self.p4, L)
+            GPIO.output(self.pin[0], H)
+            GPIO.output(self.pin[1], H)
+            GPIO.output(self.pin[2], L)
+            GPIO.output(self.pin[3], L)
             time.sleep(self.t)
+        self.off()
 
 
     def fRotate(self, step):
         for i in range(step):
-            GPIO.output(self.p1, H)
-            GPIO.output(self.p2, H)
-            GPIO.output(self.p3, L)
-            GPIO.output(self.p4, L)
+            GPIO.output(self.pin[0], H)
+            GPIO.output(self.pin[1], H)
+            GPIO.output(self.pin[2], L)
+            GPIO.output(self.pin[3], L)
             time.sleep(self.t)
 
-            GPIO.output(self.p1, L)
-            GPIO.output(self.p2, H)
-            GPIO.output(self.p3, H)
-            GPIO.output(self.p4, L)
+            GPIO.output(self.pin[0], L)
+            GPIO.output(self.pin[1], H)
+            GPIO.output(self.pin[2], H)
+            GPIO.output(self.pin[3], L)
             time.sleep(self.t)
 
-            GPIO.output(self.p1, L)
-            GPIO.output(self.p2, L)
-            GPIO.output(self.p3, H)
-            GPIO.output(self.p4, H)
+            GPIO.output(self.pin[0], L)
+            GPIO.output(self.pin[1], L)
+            GPIO.output(self.pin[2], H)
+            GPIO.output(self.pin[3], H)
             time.sleep(self.t)
 
-            GPIO.output(self.p1, H)
-            GPIO.output(self.p2, L)
-            GPIO.output(self.p3, L)
-            GPIO.output(self.p4, H)
+            GPIO.output(self.pin[0], H)
+            GPIO.output(self.pin[1], L)
+            GPIO.output(self.pin[2], L)
+            GPIO.output(self.pin[3], H)
             time.sleep(self.t)
+        self.off()
 
 
 if __name__ == "__main__":
-    with StepperMotor(GPIO.BCM, 4, 17, 27, 22, 0.004) as m:
+    with StepperMotor(0.004) as m:
         m.rRotate(1200)
