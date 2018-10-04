@@ -77,3 +77,4 @@ if __name__ == '__main__':
             if ss.recieveCode() != 0:
                 print("Returned code is not zero.")
                 break
+            print("Success.")
