@@ -23,4 +23,3 @@ class ShootingStar:
 
     def stop():
         GPIO.output(SHOOTING_STAR_PIN, GPIO.LOW)
-    

@@ -1,8 +1,8 @@
 [Unit]
-Description=Server Daemon
+Description=Controller Daemon
 
 [Service]
-ExecStart=/usr/local/lib/serverd.py
+ExecStart=/usr/bin/python3 /usr/local/lib/serverd.py
 Restart=always
 Type=simple
 User=pi
