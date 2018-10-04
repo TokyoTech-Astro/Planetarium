@@ -75,5 +75,5 @@ if __name__ == '__main__':
         print("Connected.")
         while defaultService(ss):
             if ss.recieveCode() != 0:
-                print("Returned code is not zero."")
+                print("Returned code is not zero.")
                 break
