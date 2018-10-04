@@ -26,7 +26,6 @@ class StarSphereServer:
         self.listen = listen
         
 
-
     def sendCode(self, value):
         self.conn.send(value.to_bytes(1, 'big'))
 
@@ -38,8 +37,8 @@ class StarSphereServer:
     def serve(self):
         with GPIOMaintainer():
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.bind(('', 25565))
-                s.listen(1)
+                s.bind(('', self.port))
+                s.listen(self.listen)
                 print("Waiting now...")
                 while True:
                     conn, addr = s.accept()
@@ -68,3 +67,7 @@ class StarSphereServer:
                             print(e)
                             self.sendCode(1)
                             break
+
+if __name__ == "__main__":
+    with StarSphereServer(25565, 1) as s:
+        s.serve()
