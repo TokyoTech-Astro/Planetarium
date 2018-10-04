@@ -3,7 +3,6 @@ import socket
 import RPi.GPIO as GPIO
 
 
-
 class GPIOMaintainer:
     def __init__(self):
         pass
@@ -67,6 +66,7 @@ class StarSphereServer:
                             print(e)
                             self.sendCode(1)
                             break
+
 
 if __name__ == "__main__":
     StarSphereServer(25565, 1).serve()
