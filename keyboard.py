@@ -29,7 +29,7 @@ class StepperTask(Thread):
                 self.ss.fRotate(1)
 
 
-def stepperMotorHandler(m: StepperMotor)
+def stepperMotorHandler(m: StepperMotor):
     inp = input("f or r? :")
     t = 0
     while True:
@@ -46,7 +46,7 @@ def stepperMotorHandler(m: StepperMotor)
     return True
 
 
-def shootingStarHandler(shoot: ShootingStar)
+def shootingStarHandler(shoot: ShootingStar):
     inp = input("On or off? :")
     t = True
     while True:
