@@ -69,5 +69,4 @@ class StarSphereServer:
                             break
 
 if __name__ == "__main__":
-    with StarSphereServer(25565, 1) as s:
-        s.serve()
+    StarSphereServer(25565, 1).serve()
