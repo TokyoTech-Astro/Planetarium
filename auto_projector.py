@@ -1,5 +1,6 @@
 from threading import Thread
 import threading
+import os
 import time
 import sys
 import json
@@ -12,9 +13,8 @@ from stepper_motor import StepperMotor
 from daylight import Daylight
 
 
-ADDRESS = "pi-starsphere.local"
-PORT = 25565
 FIXED_STAR = 4
+MP3_DIR = os.environ["PLAN_MP3_DIR"]
 
 
 class NotIncludingIntervalException(Exception):
@@ -47,7 +47,7 @@ class StepperService(Thread):
                     stepping += 1
 
 
-class AudioService(Thread):
+class AudioTask(Thread):
     def __init__(self, path):
         super().__init__()
         self.stop_event = threading.Event()
@@ -70,13 +70,12 @@ def testSeq(seq):
 if __name__ == "__main__":
     global continuing
     seq = None
-    with open("./sequense.json") as f:
+    with open(sys.argv[0]) as f:
         seq = json.load(f)
     testSeq(seq)
     with GPIOMaintainer():
-        with StarSphere(ADDRESS, PORT) as ss:
+        with StarSphere(os.environ["PLAN_SERVER_IP"], os.environ["PLAN_SERVER_PORT"]) as ss:
             with Daylight() as dl:
-                print("clear with")
                 shoot = ShootingStar()
                 service = StepperService()
                 service.start()
@@ -109,6 +108,8 @@ if __name__ == "__main__":
                     if e.get("picture") != None:
                         for f in e["picture"]:
                             ss.toggleSwitch(f > 0, abs(f))
+                    if e.get("audio") != None:
+                        AudioTask(MP3_DIR + e["audio"] + ".mp3")
                     if e.get("stepper") != None:
                         stepping += e["stepper"]
                 continuing = False
