@@ -31,20 +31,19 @@ class StepperService(Thread):
 
 
     def run(self):
-        with GPIOMaintainer:
-            with StepperMotor(0.004) as step:
-                global stepping
-                while True:
-                    if stepping == None:
-                        break
-                    elif stepping > 0:
-                        print("STEPPER: {}".format(stepping))
-                        step.rRotate(1)
-                        stepping -= 1
-                    elif stepping < 0:
-                        print("STEPPER: {}".format(stepping))
-                        step.fRotate(1)
-                        stepping += 1
+        with StepperMotor(0.004) as step:
+            global stepping
+            while True:
+                if stepping == None:
+                    break
+                elif stepping > 0:
+                    print("STEPPER: {}".format(stepping))
+                    step.rRotate(1)
+                    stepping -= 1
+                elif stepping < 0:
+                    print("STEPPER: {}".format(stepping))
+                    step.fRotate(1)
+                    stepping += 1
 
 
 class AudioService(Thread):
@@ -77,7 +76,8 @@ if __name__ == "__main__":
             with Daylight() as dl:
                 print("clear with")
                 shoot = ShootingStar()
-                StepperService().start()
+                service = StepperService()
+                service.start()
                 for e in seq:
                     print(e)
                     if e["interval_type"] == "wait":
@@ -109,3 +109,4 @@ if __name__ == "__main__":
                             ss.toggleSwitch(f > 0, abs(f))
                     if e.get("stepper") != None:
                         stepping += e["stepper"]
+                service.join()
