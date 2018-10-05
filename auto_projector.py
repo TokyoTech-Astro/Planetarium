@@ -34,7 +34,7 @@ class StepperService(Thread):
     def run(self):
         with StepperMotor(0.004) as step:
             global stepping
-            while continuing:
+            while continuing and stepping == 0:
                 if stepping == None:
                     break
                 elif stepping > 0:
