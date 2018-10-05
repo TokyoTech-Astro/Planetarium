@@ -81,7 +81,7 @@ if __name__ == "__main__":
                     StepperService(step).start()
                     for e in seq:
                         print(e)
-                        if e("interval_type") == "wait":
+                        if e["interval_type"] == "wait":
                             while True:
                                 if stepping == 0:
                                     break
@@ -91,7 +91,7 @@ if __name__ == "__main__":
                         else:
                             time.sleep(e["interval"])
                         print("i slept well")
-                        if e.get["sound"] != None:
+                        if e.get("sound") != None:
                             AudioService(e["sound"])
                         if e.get("daylight") != None:
                             if e["daylight"]:
