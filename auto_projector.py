@@ -81,7 +81,7 @@ if __name__ == "__main__":
                     StepperService(step).start()
                     for e in seq:
                         print(e)
-                        if e["interval_type"] == "wait":
+                        if e("interval_type") == "wait":
                             while True:
                                 if stepping == 0:
                                     break
