@@ -120,21 +120,21 @@ if __name__ == '__main__':
     with GPIOMaintainer():
         with StarSphere(ADDRESS, PORT) as ss:
             with StepperMotor(0.004) as m:
-                shoot = ShootingStar()
-                d = Daylight()
-                StepperTask(StepperMotor(0.004)).start()
-                res = True
-                while res:
-                    inp = input("StarSphere => star\nShootingStar => shoot\nDaylight => day\nStepperMotor => motor\nExit => exit>")
+                with Daylight() as d:
+                    shoot = ShootingStar()
+                    StepperTask(StepperMotor(0.004)).start()
                     res = True
-                    if command(inp, "star"):
-                        res = starSphereHandler(ss)
-                    elif command(inp, "shoot"):
-                        res = shootingStarHandler(shoot)
-                    elif command(inp, "day"):
-                        res = daylightHandler(d)
-                    elif command(inp, "motor"):
-                        res = stepperMotorHandler(m)
-                    elif command(inp, "exit"):
-                        res = False
-                stepping = None
+                    while res:
+                        inp = input("StarSphere => star\nShootingStar => shoot\nDaylight => day\nStepperMotor => motor\nExit => exit>")
+                        res = True
+                        if command(inp, "star"):
+                            res = starSphereHandler(ss)
+                        elif command(inp, "shoot"):
+                            res = shootingStarHandler(shoot)
+                        elif command(inp, "day"):
+                            res = daylightHandler(d)
+                        elif command(inp, "motor"):
+                            res = stepperMotorHandler(m)
+                        elif command(inp, "exit"):
+                            res = False
+                    stepping = None
