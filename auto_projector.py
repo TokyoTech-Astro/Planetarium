@@ -31,19 +31,20 @@ class StepperService(Thread):
 
 
     def run(self):
-        with StepperMotor(0.004) as step:
-            global stepping
-            while True:
-                if stepping == None:
-                    break
-                elif stepping > 0:
-                    print("STEPPER: {}".format(stepping))
-                    step.rRotate(1)
-                    stepping -= 1
-                elif stepping < 0:
-                    print("STEPPER: {}".format(stepping))
-                    step.fRotate(1)
-                    stepping += 1
+        with GPIOMaintainer:
+            with StepperMotor(0.004) as step:
+                global stepping
+                while True:
+                    if stepping == None:
+                        break
+                    elif stepping > 0:
+                        print("STEPPER: {}".format(stepping))
+                        step.rRotate(1)
+                        stepping -= 1
+                    elif stepping < 0:
+                        print("STEPPER: {}".format(stepping))
+                        step.fRotate(1)
+                        stepping += 1
 
 
 class AudioService(Thread):
