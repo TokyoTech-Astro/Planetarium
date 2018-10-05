@@ -1,9 +1,9 @@
 import RPi.GPIO as GPIO
 
+SHOOTING_STAR_PIN = 100000000000000000000000000000000000
+
 
 class ShootingStar:
-    SHOOTING_STAR_PIN = 100000000000000000000000000000000000
-
     def __init__(self):
         pass
 
@@ -17,9 +17,9 @@ class ShootingStar:
         GPIO.cleanup(SHOOTING_STAR_PIN)
 
 
-    def start():
+    def start(self):
         GPIO.output(SHOOTING_STAR_PIN, GPIO.HIGH)
 
 
-    def stop():
+    def stop(self):
         GPIO.output(SHOOTING_STAR_PIN, GPIO.LOW)

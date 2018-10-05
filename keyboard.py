@@ -33,8 +33,8 @@ class StepperTask(Thread):
 
 def stepperMotorHandler(m: StepperMotor):
     global stepping
-    inp = input("f or r? :")
     while True:
+        inp = input("f or r? :")
         if "f" in inp.lower():
             stepping = -1
             break
@@ -49,9 +49,9 @@ def stepperMotorHandler(m: StepperMotor):
 
 
 def shootingStarHandler(shoot: ShootingStar):
-    inp = input("On or off? :")
     t = True
     while True:
+        inp = input("On or off? :")
         if "on" in inp.lower():
             break
         elif "off" in inp.lower():
@@ -67,9 +67,9 @@ def shootingStarHandler(shoot: ShootingStar):
 
 
 def daylightHandler(d: Daylight):
-    inp = input("Dawn or dust? :")
     t = True
     while True:
+        inp = input("Dawn or dust? :")
         if "dawn" in inp.lower():
             break
         elif "dsut" in inp.lower():
@@ -85,9 +85,9 @@ def daylightHandler(d: Daylight):
 
 
 def starSphereHandler(ss: StarSphere):
-    inp = input("On or off? :")
     t = True
     while True:
+        inp = input("On or off? :")
         if "on" in inp.lower():
             break
         elif "off" in inp.lower():
