@@ -74,9 +74,11 @@ if __name__ == "__main__":
         with StarSphere(ADDRESS, PORT) as ss:
             with StepperMotor(0.004) as step:
                 with Daylight() as dl:
+                    print("clear with")
                     shoot = ShootingStar()
                     StepperService(step).start()
                     for e in seq:
+                        print(e)
                         if e["interval_type"] == "wait":
                             while True:
                                 if stepping == 0:
