@@ -23,6 +23,7 @@ class NotIncludingIntervalException(Exception):
 
 
 stepping = 0
+continuing = True
 
 
 class StepperService(Thread):
@@ -33,7 +34,7 @@ class StepperService(Thread):
     def run(self):
         with StepperMotor(0.004) as step:
             global stepping
-            while True:
+            while continuing:
                 if stepping == None:
                     break
                 elif stepping > 0:
@@ -67,6 +68,7 @@ def testSeq(seq):
 
 
 if __name__ == "__main__":
+    global continuing
     seq = None
     with open("./seq.json") as f:
         seq = json.load(f)
@@ -109,4 +111,5 @@ if __name__ == "__main__":
                             ss.toggleSwitch(f > 0, abs(f))
                     if e.get("stepper") != None:
                         stepping += e["stepper"]
+                continuing = False
                 service.join()
