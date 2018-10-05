@@ -70,7 +70,7 @@ def testSeq(seq):
 if __name__ == "__main__":
     global continuing
     seq = None
-    with open("./seq.json") as f:
+    with open("./sequense.json") as f:
         seq = json.load(f)
     testSeq(seq)
     with GPIOMaintainer():
