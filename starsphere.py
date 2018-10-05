@@ -60,7 +60,7 @@ def defaultService(ss: StarSphere):
         pin = 0
         try:
             pin = int(inp)
-        except ValueError as e:
+        except ValueError:
             print("Invalid value.")
             continue
         if pin > 128 or pin < 0:

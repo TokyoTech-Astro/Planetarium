@@ -1,4 +1,3 @@
-import socket
 from threading import Thread
 from gpio_maintaner import GPIOMaintainer
 from starsphere import StarSphere
@@ -22,6 +21,7 @@ class StepperTask(Thread):
 
 
     def run(self):
+        global stepping
         while True:
             if stepping == None:
                 break
@@ -43,7 +43,7 @@ def stepperMotorHandler(m: StepperMotor):
             break
         else:
             print("Invalid value.")
-    x = input("Press enter key to stop rotating.")
+    input("Press enter key to stop rotating.")
     stepping = 0
     return True
 
@@ -69,10 +69,10 @@ def shootingStarHandler(shoot: ShootingStar):
 def daylightHandler(d: Daylight):
     t = True
     while True:
-        inp = input("Dawn or dust? :")
+        inp = input("Dawn or dusk? :")
         if "dawn" in inp.lower():
             break
-        elif "dsut" in inp.lower():
+        elif "dusk" in inp.lower():
             t = False
             break
         else:
@@ -122,7 +122,7 @@ if __name__ == '__main__':
             with StepperMotor(0.004) as m:
                 with Daylight() as d:
                     shoot = ShootingStar()
-                    StepperTask(StepperMotor(0.004)).start()
+                    StepperTask(m).start()
                     res = True
                     while res:
                         inp = input("StarSphere => star\nShootingStar => shoot\nDaylight => day\nStepperMotor => motor\nExit => exit>")

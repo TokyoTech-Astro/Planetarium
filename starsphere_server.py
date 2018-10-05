@@ -62,6 +62,9 @@ class StarSphereServer:
                                 else:
                                     break
                                 self.sendCode(0)
+                        except ConnectionError as e:
+                            print("Exception was thrown on connection.")
+                            print(e)
                         except Exception as e:
                             print("Exception was thrown.")
                             print(e)

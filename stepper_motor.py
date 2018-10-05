@@ -35,7 +35,7 @@ class StepperMotor:
     
 
     def rRotate(self, step):
-        for i in range(step):
+        for _ in range(step):
             GPIO.output(self.pin[0], H)
             GPIO.output(self.pin[1], L)
             GPIO.output(self.pin[2], L)
@@ -63,7 +63,7 @@ class StepperMotor:
 
 
     def fRotate(self, step):
-        for i in range(step):
+        for _ in range(step):
             GPIO.output(self.pin[0], H)
             GPIO.output(self.pin[1], H)
             GPIO.output(self.pin[2], L)
