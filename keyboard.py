@@ -1,4 +1,5 @@
 import socket
+from threading import Thread
 from gpio_maintaner import GPIOMaintainer
 from starsphere import StarSphere
 from shooting_star import ShootingStar
@@ -6,8 +7,8 @@ from stepper_motor import StepperMotor
 from daylight import Daylight
 
 
-ADDRESS = ""
-PORT = 0
+ADDRESS = "pi-starsphere.local"
+PORT = 25565
 
 
 stepping = 0
@@ -15,6 +16,7 @@ stepping = 0
 
 class StepperTask(Thread):
     def __init__(self, ss: StepperMotor):
+        super(StepperTask, self).__init__()
         self.ss = ss
         pass
 
@@ -30,8 +32,8 @@ class StepperTask(Thread):
 
 
 def stepperMotorHandler(m: StepperMotor):
+    global stepping
     inp = input("f or r? :")
-    t = 0
     while True:
         if "f" in inp.lower():
             stepping = -1
@@ -78,7 +80,7 @@ def daylightHandler(d: Daylight):
     if t:
         d.dawn()
     else:
-        d.dust()
+        d.dusk()
     return True
 
 
@@ -98,7 +100,7 @@ def starSphereHandler(ss: StarSphere):
         pin = 0
         try:
             pin = int(inp)
-        except ValueError as e:
+        except ValueError:
             print("Invalid value.")
             continue
         if pin > 128 or pin < 0:
@@ -117,7 +119,7 @@ def command(inp: str, s: str):
 if __name__ == '__main__':
     with GPIOMaintainer():
         with StarSphere(ADDRESS, PORT) as ss:
-            m = StepperMotor()
+            m = StepperMotor(0.004)
             shoot = ShootingStar()
             d = Daylight()
             StepperTask(StepperMotor(0.004)).start()
@@ -135,3 +137,4 @@ if __name__ == '__main__':
                     res = stepperMotorHandler(m)
                 elif command(inp, "exit"):
                     res = False
+            stepping = None

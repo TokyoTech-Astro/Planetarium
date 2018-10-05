@@ -44,7 +44,6 @@ def testSeq(seq):
     for i, e in seq:
         if "interval" not in e:
             raise NotIncludingIntervalException(i)
-            break
 
 
 

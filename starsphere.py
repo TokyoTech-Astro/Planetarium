@@ -37,7 +37,7 @@ class StarSphere:
 
     
     def sendExit(self):
-        send(conn, 0b01111111)
+        self.sendCode(0b01111111)
 
 
 

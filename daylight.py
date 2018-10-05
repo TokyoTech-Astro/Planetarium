@@ -2,11 +2,11 @@ import time
 import RPi.GPIO as GPIO
 
 
+DAWN_PIN = 24
+DUSK_PIN = 25
+
+
 class Daylight:
-    DAWN_PIN = 24
-    DUSK_PIN = 25
-
-
     def __init__(self):
         pass
 
@@ -22,13 +22,13 @@ class Daylight:
         GPIO.cleanup(DUSK_PIN)
 
 
-    def dawn():
+    def dawn(self):
         GPIO.output(DAWN_PIN, GPIO.HIGH)
         time.sleep(1)
         GPIO.output(DAWN_PIN, GPIO.LOW)
     
 
-    def dust():
-        GPIO.output(DUST_PIN, GPIO.HIGH)
+    def dusk(self):
+        GPIO.output(DUSK_PIN, GPIO.HIGH)
         time.sleep(1)
-        GPIO.output(DUST_PIN, GPIO.LOW)
+        GPIO.output(DUSK_PIN, GPIO.LOW)
