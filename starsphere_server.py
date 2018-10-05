@@ -49,6 +49,9 @@ class StarSphereServer:
                             while True:
                                 data = self.recieveCode()
                                 print("Recieved data: {}".format(data))
+                                if data == 0:
+                                    print("Connection finished")
+                                    break
                                 if data & 0b10000000 == 0b10000000:
                                     pin = data ^ 0b10000000
                                     print("TURN ON: %d -> " % pin, end="")
