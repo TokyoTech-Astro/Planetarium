@@ -35,6 +35,7 @@ class StepperService(Thread):
     def run(self):
         global stepping
         while True:
+            print("STEPPER: {}".format(stepping))
             if stepping == None:
                 break
             elif stepping > 0:
@@ -59,7 +60,7 @@ class AudioService(Thread):
 
 
 def testSeq(seq):
-    for i, e in seq:
+    for e in seq:
         if "interval" not in e:
             raise NotIncludingIntervalException(i)
 
@@ -67,7 +68,7 @@ def testSeq(seq):
 
 if __name__ == "__main__":
     seq = None
-    with open("") as f:
+    with open("./seq.json") as f:
         seq = json.load(f)
     testSeq(seq)
     with GPIOMaintainer():
@@ -88,6 +89,7 @@ if __name__ == "__main__":
                             stepping = 0
                         else:
                             time.sleep(e["interval"])
+                        print("i slept well")
                         if e.get["sound"] != None:
                             AudioService(e["sound"])
                         if e.get("daylight") != None:
