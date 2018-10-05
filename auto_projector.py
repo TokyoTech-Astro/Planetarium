@@ -91,8 +91,6 @@ if __name__ == "__main__":
                     else:
                         time.sleep(e["interval"])
                     print("i slept well")
-                    if e.get("sound") != None:
-                        AudioService(e["sound"])
                     if e.get("daylight") != None:
                         if e["daylight"]:
                             dl.dawn()
