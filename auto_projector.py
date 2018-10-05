@@ -26,25 +26,24 @@ stepping = 0
 
 
 class StepperService(Thread):
-    def __init__(self, ss: StepperMotor):
+    def __init__(self):
         super(StepperService, self).__init__()
-        self.ss = ss
-        pass
 
 
     def run(self):
-        global stepping
-        while True:
-            if stepping == None:
-                break
-            elif stepping > 0:
-                print("STEPPER: {}".format(stepping))
-                self.ss.rRotate(1)
-                stepping -= 1
-            elif stepping < 0:
-                print("STEPPER: {}".format(stepping))
-                self.ss.fRotate(1)
-                stepping += 1
+        with StepperMotor(0.004) as step:
+            global stepping
+            while True:
+                if stepping == None:
+                    break
+                elif stepping > 0:
+                    print("STEPPER: {}".format(stepping))
+                    step.rRotate(1)
+                    stepping -= 1
+                elif stepping < 0:
+                    print("STEPPER: {}".format(stepping))
+                    step.fRotate(1)
+                    stepping += 1
 
 
 class AudioService(Thread):
@@ -61,7 +60,7 @@ class AudioService(Thread):
 
 
 def testSeq(seq):
-    for e in seq:
+    for i, e in enumerate(seq):
         if "interval" not in e:
             raise NotIncludingIntervalException(i)
 
@@ -74,39 +73,38 @@ if __name__ == "__main__":
     testSeq(seq)
     with GPIOMaintainer():
         with StarSphere(ADDRESS, PORT) as ss:
-            with StepperMotor(0.004) as step:
-                with Daylight() as dl:
-                    print("clear with")
-                    shoot = ShootingStar()
-                    StepperService(step).start()
-                    for e in seq:
-                        print(e)
-                        if e["interval_type"] == "wait":
-                            while True:
-                                if stepping == 0:
-                                    break
-                                time.sleep(0.03)
-                        elif e["interval_type"] == "force":
-                            stepping = 0
+            with Daylight() as dl:
+                print("clear with")
+                shoot = ShootingStar()
+                StepperService().start()
+                for e in seq:
+                    print(e)
+                    if e["interval_type"] == "wait":
+                        while True:
+                            if stepping == 0:
+                                break
+                            time.sleep(0.03)
+                    elif e["interval_type"] == "force":
+                        stepping = 0
+                    else:
+                        time.sleep(e["interval"])
+                    print("i slept well")
+                    if e.get("sound") != None:
+                        AudioService(e["sound"])
+                    if e.get("daylight") != None:
+                        if e["daylight"]:
+                            dl.dawn()
                         else:
-                            time.sleep(e["interval"])
-                        print("i slept well")
-                        if e.get("sound") != None:
-                            AudioService(e["sound"])
-                        if e.get("daylight") != None:
-                            if e["daylight"]:
-                                dl.dawn()
-                            else:
-                                dl.dusk()
-                        if e.get("shootingstar") != None:
-                            if e["shootingstar"]:
-                                shoot.start()
-                            else:
-                                shoot.stop()
-                        if e.get("fixedstar") != None:
-                            ss.toggleSwitch(e["fixedstar"], FIXED_STAR)
-                        if e.get("picture") != None:
-                            for f in e["picture"]:
-                                ss.toggleSwitch(f > 0, abs(f))
-                        if e.get("stepper") != None:
-                            stepping += e["stepper"]
+                            dl.dusk()
+                    if e.get("shootingstar") != None:
+                        if e["shootingstar"]:
+                            shoot.start()
+                        else:
+                            shoot.stop()
+                    if e.get("fixedstar") != None:
+                        ss.toggleSwitch(e["fixedstar"], FIXED_STAR)
+                    if e.get("picture") != None:
+                        for f in e["picture"]:
+                            ss.toggleSwitch(f > 0, abs(f))
+                    if e.get("stepper") != None:
+                        stepping += e["stepper"]
