@@ -1,14 +1,30 @@
 [
     {
         "interval": 0,
-        "stepper": 500
+        "stepper": 300
     },
     {
         "interval": "wait",
-        "stepper": -500
+        "stepper": -300
     },
     {
         "interval": 15,
         "daylight": false
+    },
+    {
+        "interval": 2,
+        "fixedstar": true
+    },
+    {
+        "interval": 1,
+        "fixedstar": false
+    },
+    {
+        "interval": 1,
+        "fixedstar": true
+    },
+    {
+        "interval": 1,
+        "fixedstar": false
     }
 ]

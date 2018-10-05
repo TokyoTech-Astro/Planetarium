@@ -14,7 +14,7 @@ from daylight import Daylight
 
 ADDRESS = "pi-starsphere.local"
 PORT = 25565
-FIXED_STAR = 0
+FIXED_STAR = 4
 
 
 class NotIncludingIntervalException(Exception):
