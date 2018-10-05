@@ -1,12 +1,10 @@
 [
     {
-        "interval_type": "wait",
-        "interval": 5,
+        "interval": 0,
         "stepper": 100
     },
     {
-        "interval_type": "force",
-        "interval": 10,
+        "interval": "wait",
         "stepper": -200
     }
 ]

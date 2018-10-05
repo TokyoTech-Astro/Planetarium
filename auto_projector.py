@@ -80,12 +80,12 @@ if __name__ == "__main__":
                 service.start()
                 for e in seq:
                     print(e)
-                    if e["interval_type"] == "wait":
+                    if e["interval"] == "wait":
                         while True:
                             if stepping == 0:
                                 break
                             time.sleep(0.03)
-                    elif e["interval_type"] == "force":
+                    elif e["interval"] == "force":
                         stepping = 0
                     else:
                         time.sleep(e["interval"])
