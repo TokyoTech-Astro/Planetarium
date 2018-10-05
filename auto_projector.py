@@ -35,13 +35,14 @@ class StepperService(Thread):
     def run(self):
         global stepping
         while True:
-            print("STEPPER: {}".format(stepping))
             if stepping == None:
                 break
             elif stepping > 0:
+                print("STEPPER: {}".format(stepping))
                 self.ss.rRotate(1)
                 stepping -= 1
             elif stepping < 0:
+                print("STEPPER: {}".format(stepping))
                 self.ss.fRotate(1)
                 stepping += 1
 
