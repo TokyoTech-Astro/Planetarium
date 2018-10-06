@@ -1,4 +1,4 @@
-import RPi.GOUI as GPIO
+import RPi.GPIO as GPIO
 from auto_projector import auto_project
 from threading import Thread
 from gpio_maintaner import GPIOMaintainer
