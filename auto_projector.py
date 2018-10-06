@@ -68,13 +68,12 @@ def testSeq(seq):
 
 
 if __name__ == "__main__":
-    global continuing
     seq = None
     with open(sys.argv[1]) as f:
         seq = json.load(f)
     testSeq(seq)
     with GPIOMaintainer():
-        with StarSphere(os.environ["PLAN_SERVER_IP"], os.environ["PLAN_SERVER_PORT"]) as ss:
+        with StarSphere(os.environ["PLAN_SERVER_IP"], int(os.environ["PLAN_SERVER_PORT"])) as ss:
             with Daylight() as dl:
                 shoot = ShootingStar()
                 service = StepperService()
