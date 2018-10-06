@@ -66,10 +66,9 @@ def testSeq(seq):
             raise NotIncludingIntervalException(i)
 
 
-
-if __name__ == "__main__":
+def auto_project(path):
     seq = None
-    with open(sys.argv[1]) as f:
+    with open(path) as f:
         seq = json.load(f)
     testSeq(seq)
     with GPIOMaintainer():
@@ -111,3 +110,10 @@ if __name__ == "__main__":
                         stepping += e["stepper"]
                 continuing = False
                 service.join()
+
+
+
+
+if __name__ == "__main__":
+    auto_project(sys.argv[1])
+    

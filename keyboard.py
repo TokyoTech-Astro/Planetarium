@@ -1,3 +1,5 @@
+import RPi.GOUI as GPIO
+from auto_projector import auto_project
 from threading import Thread
 from gpio_maintaner import GPIOMaintainer
 from starsphere import StarSphere
@@ -112,6 +114,12 @@ def starSphereHandler(ss: StarSphere):
         return True
 
 
+def autoHandler():
+    inp = input("Path? :")
+    auto_project(inp)
+        
+
+
 def command(inp: str, s: str):
     return s in inp.lower()
 
@@ -125,7 +133,7 @@ if __name__ == '__main__':
                     StepperTask(m).start()
                     res = True
                     while res:
-                        inp = input("StarSphere => star\nShootingStar => shoot\nDaylight => day\nStepperMotor => motor\nExit => exit>")
+                        inp = input("StarSphere => star\nShootingStar => shoot\nDaylight => day\nStepperMotor => motor\nAutoProjection => auto\nExit => exit\n>")
                         res = True
                         if command(inp, "star"):
                             res = starSphereHandler(ss)
@@ -135,6 +143,8 @@ if __name__ == '__main__':
                             res = daylightHandler(d)
                         elif command(inp, "motor"):
                             res = stepperMotorHandler(m)
+                        elif command(inp, "auto"):
+                            autoHandler()
                         elif command(inp, "exit"):
                             res = False
                     stepping = None
