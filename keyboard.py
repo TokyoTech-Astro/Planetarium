@@ -119,7 +119,6 @@ def autoHandler(ss, dl, stepper):
     auto_project(inp, ss, dl, stepper)
         
 
-
 def command(inp: str, s: str):
     return s in inp.lower()
 

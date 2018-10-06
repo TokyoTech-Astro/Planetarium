@@ -40,13 +40,15 @@ class StepperService(Thread):
                     break
                 elif stepping > 0:
                     print("STEPPER: {}".format(stepping))
-                    step.rRotate(1)
+                    step.fRotate(1)
                     stepping -= 1
                 elif stepping < 0:
                     print("STEPPER: {}".format(stepping))
-                    step.fRotate(1)
+                    step.rRotate(1)
                     stepping += 1
 
+
+playing = 0
 
 class AudioTask(Thread):
     def __init__(self, path):
@@ -58,7 +60,10 @@ class AudioTask(Thread):
 
 
     def play(self):
-        play(AudioSegment.from_mp3(self.path))
+        global playing
+        play(AudioSegment.from_mp3(self.path) + 30)
+        playing -= 1
+        
 
 
 def testSeq(seq):
@@ -70,6 +75,7 @@ def testSeq(seq):
 def auto_project(path, ss, dl, stepper):
     global stepping
     global continuing
+    global playing
     seq = None
     with open(path) as f:
         seq = json.load(f)
@@ -81,7 +87,7 @@ def auto_project(path, ss, dl, stepper):
         print(e)
         if e["interval"] == "wait":
             while True:
-                if stepping == 0:
+                if stepping == 0 and playing == 0:
                     break
                 time.sleep(0.03)
         elif e["interval"] == "force":
@@ -105,11 +111,14 @@ def auto_project(path, ss, dl, stepper):
             for f in e["picture"]:
                 ss.toggleSwitch(f > 0, abs(f))
         if e.get("audio") != None:
+            playing += 1
             AudioTask(MP3_DIR + e["audio"] + ".mp3")
         if e.get("stepper") != None:
             stepping += e["stepper"]
     continuing = False
     service.join()
+    while not playing == 0:
+        time.sleep(0.03)
 
 
 
