@@ -103,7 +103,7 @@
         "audio": "10"
     },
     {
-        "internal": "wait",
+        "interval": "wait",
         "daylight": true
     }
  ]
