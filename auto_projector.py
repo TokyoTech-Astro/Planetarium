@@ -67,6 +67,8 @@ def testSeq(seq):
 
 
 def auto_project(path):
+    global stepping
+    global continuing
     seq = None
     with open(path) as f:
         seq = json.load(f)
