@@ -114,9 +114,9 @@ def starSphereHandler(ss: StarSphere):
         return True
 
 
-def autoHandler():
+def autoHandler(ss, dl, stepper):
     inp = input("Path? :")
-    auto_project(inp)
+    auto_project(inp, ss, dl, stepper)
         
 
 
@@ -144,7 +144,7 @@ if __name__ == '__main__':
                         elif command(inp, "motor"):
                             res = stepperMotorHandler(m)
                         elif command(inp, "auto"):
-                            autoHandler()
+                            autoHandler(ss, d, m)
                         elif command(inp, "exit"):
                             res = False
                     stepping = None
