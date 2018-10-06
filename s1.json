@@ -1,9 +1,8 @@
-
 [ 
     {
         "interval": 0,
         "daylight": false,
-        "picuture": [-6, -14, -12, -5, -21]
+        "picture": [-16, -6, -13, -12, -5, -21, -19, -26]
     },
     { 
         "interval": 0,
@@ -15,7 +14,7 @@
         "comment": "spring"
     },
     {
-        "interval":15,
+        "interval":19,
         "picture": [26]
     },
     {
@@ -43,7 +42,7 @@
         "audio": "04"
     },
     {
-        "interval": 14,
+        "interval": 20,
         "picture": [6]
     },
     {
@@ -52,14 +51,14 @@
     },
     {
         "interval": "wait",
-        "stepper": 1400
+        "stepper": 700
     },
     {
         "interval": "wait",
         "audio": "05"
     },
     {
-        "interval": 12,
+        "interval": 18,
         "picture": [12]
     },
     {
@@ -68,14 +67,14 @@
     },
     {
         "interval": "wait",
-        "stepper": 1400
+        "stepper": 1200
     },
     {
         "interval": "wait",
         "audio": "06"
     },
     {
-        "interval": 25,
+        "interval": 30,
         "picture": [5]
     },
     {
@@ -92,16 +91,16 @@
         "picture": [21]
     },
     {
-        "interval": "15",
+        "interval": 10,
         "picture": [-21]
     },
     {
-        "interval": "wait",
-        "audio": "09"
+        "interval":"wait", 
+        "audio":"09"
     },
     {
-        "interval": "wait",
-        "audio": "10"
+        "interval":"wait",
+         "audio":"10"
     },
     {
         "interval": "wait",
