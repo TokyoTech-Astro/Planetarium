@@ -28,23 +28,24 @@ continuing = True
 
 class StepperService(Thread):
     def __init__(self, stepper):
-        super(StepperService, self).__init__()
+        super().__init__()
         self.stepper = stepper
 
 
     def run(self):
         global stepping
-        while continuing or not stepping == 0:
-            if stepping == None:
-                break
-            elif stepping > 0:
-                print("STEPPER: {}".format(stepping))
-                self.stepper.fRotate(1)
-                stepping -= 1
-            elif stepping < 0:
-                print("STEPPER: {}".format(stepping))
-                self.stepper.rRotate(1)
-                stepping += 1
+        try:
+            while continuing or not stepping == 0:
+                if stepping == None:
+                    break
+                elif stepping > 0:
+                    print("STEPPER: {}".format(stepping))
+                    self.stepper.fRotate(1)
+                    stepping -= 1
+                elif stepping < 0:
+                    print("STEPPER: {}".format(stepping))
+                    self.stepper.rRotate(1)
+                    stepping += 1
 
 
 playing = 0
@@ -75,6 +76,7 @@ def auto_project(path, ss, dl, stepper):
     global stepping
     global continuing
     global playing
+    continuing = True
     seq = None
     with open(path) as f:
         seq = json.load(f)
