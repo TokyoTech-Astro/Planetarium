@@ -1,0 +1,10 @@
+[
+    {
+        "interval": 0,
+        "stepper":50
+    },
+    {
+        "interval":0,
+        "stepper":-50
+    }
+]

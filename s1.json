@@ -15,18 +15,18 @@
     },
     {
         "interval":19,
-        "picture": [26]
+        "picture": [21]
     },
     {
         "interval":7,
-        "picture":[-26]
+        "picture":[-21]
     },
     {
         "interval": 25,
         "picture": [13]
     },
     {
-        "interval": 7,
+        "interval": 13,
         "picture": [-13]
     },
     {
@@ -42,7 +42,7 @@
         "audio": "04"
     },
     {
-        "interval": 20,
+        "interval": 19,
         "picture": [6]
     },
     {
@@ -58,7 +58,7 @@
         "audio": "05"
     },
     {
-        "interval": 18,
+        "interval": 22,
         "picture": [12]
     },
     {
@@ -87,12 +87,15 @@
     },
     {
         "interval": "wait",
-        "audio": "08",
-        "picture": [21]
+        "audio": "08"
+    },
+    {
+        "interval": 8,
+        "picture": [16]
     },
     {
         "interval": 10,
-        "picture": [-21]
+        "picture": [-16]
     },
     {
         "interval":"wait", 
@@ -105,7 +108,7 @@
     {
         "interval": "wait",
         "daylight": true,
-        "stepper": -4200,
+        "stepper": -3300,
         "picuture": [-6, -14, -12, -5, -21]
     }
  ]
