@@ -38,11 +38,11 @@ class StepperService(Thread):
             if stepping == None:
                 break
             elif stepping > 0:
-                print("STEPPER: {}".format(stepping))
+                print("STEPPER: {}".format(stepping), end="")
                 self.stepper.fRotate(1)
                 stepping -= 1
             elif stepping < 0:
-                print("STEPPER: {}".format(stepping))
+                print("STEPPER: {}".format(stepping), end="")
                 self.stepper.rRotate(1)
                 stepping += 1
 

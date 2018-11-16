@@ -1,10 +1,10 @@
 [
     {
         "interval": 0,
-        "stepper":50
+        "stepper":150
     },
     {
-        "interval":0,
-        "stepper":-50
+        "interval":5,
+        "stepper":-150
     }
 ]
