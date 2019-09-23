@@ -1,0 +1,91 @@
+[
+    {
+        "daylight": false,
+        "audio":"K2019",
+        "interval":3
+    },
+    {
+        "comment":"昼光が消えてから,10は適当,3600は回す量(未定)",
+        "fixedstar" :true,
+        "motor":600,
+        "interval":1
+    },
+    {
+        "comment":"オリオンon",
+        "starpicture": [10,12],
+        "interval":1
+    },
+    {
+        "comment":"こいぬon",
+        "starpicture": [10,12],
+        "interval": 1
+    },
+    {
+        "comment":"こいぬoff,おおいぬon",
+        "starpicture": [10],
+        "interval": 1
+    },
+    {
+        "comment":"こいぬon",
+        "starpicture": [10],
+        "interval":1
+    },
+    {
+        "comment":"ダイヤモンドon(おうし・ぎょしゃ・ふたごon)",
+        "starpicture": [10],
+        "interval": 1
+    },
+    {
+        "comment":"おうし以外off",
+        "starpicture":[10],
+        "interval": 1
+    },
+    {
+        "comment":"おうしoff,ぎょしゃon,オリオンoff",
+        "starpicture":[10],
+        "interval":1
+    },
+    {
+        "comment":"ぎょしゃoff,ふたごon",
+        "starpicture":[10],
+        "interval":1
+    },
+    {
+        "comment":"ふたごoff,ししon",
+        "starpicture":[10],
+        "interval":1
+    },
+    {
+        "comment":"ししoff,やぎon",
+        "starpicture":[10],
+        "interval":1
+    },
+    {
+        "comment":"やぎoff,かにon",
+        "starpicture":[10],
+        "interval":1
+    },
+    {
+        "comment":"かにoff,エリダヌスon",
+        "starpicture":[10],
+        "interval":2
+    },
+    {
+        "comment":"エリダヌスoff",
+        "starpicture":[10],
+        "interval":5
+    },
+    {
+        "comment":"原稿終了",
+        "interval":"wait"
+    },
+    {
+        "motor":-600,
+        "fixedstar":false,
+        "daylight":true,
+        "interval":"wait" 
+    },
+    {
+        "interval":"end"
+    }
+]
