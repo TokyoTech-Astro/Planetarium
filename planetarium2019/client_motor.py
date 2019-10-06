@@ -89,13 +89,14 @@ if __name__ == "__main__":
                         for i in range(len(allstarsName)):
                             print("{0} => {1}".format(allstarsName[i],allstarsPin[i]))
                         print("StarpictureAllOn => allon\nStarpictureAllOff => alloff\nExit => exit\n")
-                        while True:
-                            
+                        while True: 
                             inp = input()
                             try:
                                 pin = int(inp)
                                 if -40 <= pin and pin <= 40:
                                     sc.senddata(inp)
+                                else:
+                                    print("The pin number does not exist.")
                             except:
                                 if inp == "exit":
                                     sc.senddata("exit")
@@ -110,7 +111,7 @@ if __name__ == "__main__":
                                         sc.senddata(str(-pin))
                                         time.sleep(0.05)
                                 else:
-                                    print("Please enter the correct string/integer")
+                                    print("Please enter the correct string/integer.")
 
                     elif mode == "audio":
                         #name = input("Please enter the music name")
@@ -155,7 +156,6 @@ if __name__ == "__main__":
                         with StepperMotor(0.04) as sm:
                             stepping -= 860
                             StepperService(sm).start()
-
 
                     elif mode == "exit":
                         print("exit")
