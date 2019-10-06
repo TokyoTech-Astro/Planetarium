@@ -76,8 +76,7 @@ if __name__ == "__main__":
             with Daylight() as dl:
                 while True:
                 
-                    mode = input("StarAllOf => all\nSwitching star => star\nPlaying audio =>audio\nRotation motor =>motor\nSwitching daylight => daylight\nAutomode => auto\nExit => exit\n")
-                    print()
+                    mode = input("StarAllOf => all\nSwitching star => star\nPlaying audio =>audio\nRotation motor =>motor\nSwitching daylight => daylight\nAutomode => auto\nExit => exit\n\n")
                     if mode == "all":
                         sc.senddata("star")
                         print("Turn off the all StarPins")
@@ -119,9 +118,9 @@ if __name__ == "__main__":
 
                     elif mode == "motor":
                         continuing = True
-                        inp = input("Please rnter the speed")
+                        inp = input("Please enter the speed")
                         try:
-                            with StepperMotor(float(inp)) as sm:
+                            with StepperMotor(abs(float(inp))) as sm:
                                 inp = input("Please enter the stepping number")
                                 try:
                                     stepping += int(inp)
@@ -130,6 +129,7 @@ if __name__ == "__main__":
                                         if stepping == 0:
                                             continuing = False
                                             break
+                                        time.sleep(0.03)
                                 except:
                                     print("Please enter the integer")
                         except:
