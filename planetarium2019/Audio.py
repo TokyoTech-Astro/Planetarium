@@ -15,13 +15,3 @@ class Audio(Thread):
         print("Playing " + file_name)
         pygame.mixer.music.load(file_name)
         pygame.mixer.music.play()
-
-    
-
-if __name__ == "__main__":
-    Audio("famiyu").start()
-    time.sleep(5)
-    t = 0
-    while t <= 10: 
-        print("1")
-        t += 1

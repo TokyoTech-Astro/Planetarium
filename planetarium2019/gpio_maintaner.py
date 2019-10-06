@@ -4,7 +4,6 @@ type = 0
 
 class GPIOMaintainer:
     def __init__(self):
-        print("GPIOP setup")
         GPIO.setmode(GPIO.BCM)
 
 
@@ -14,7 +13,6 @@ class GPIOMaintainer:
 
     def __exit__(self, type, value, traceback):
         GPIO.cleanup()
-        print("cleanup")
 
 
 if __name__ == "__main__":

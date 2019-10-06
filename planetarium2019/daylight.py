@@ -1,5 +1,6 @@
 import time
 import RPi.GPIO as GPIO
+from gpio_maintaner import GPIOMaintainer
 
 
 DAWN_PIN = 24
@@ -20,7 +21,6 @@ class Daylight:
     def __exit__(self, type, value, traceback):
         GPIO.cleanup(DAWN_PIN)
         GPIO.cleanup(DUSK_PIN)
-        print("daylight end")
 
 
     def dawn(self):
@@ -35,3 +35,17 @@ class Daylight:
         GPIO.output(DUSK_PIN, GPIO.HIGH)
         time.sleep(1)
         GPIO.output(DUSK_PIN, GPIO.LOW)
+
+
+if __name__ == "__main__":
+    with GPIOMaintainer():
+        with Daylight() as dl:
+            while True:
+                mode = input("on or off or exit")
+                if mode == "on":
+                    dl.dawn()
+                elif mode == "off":
+                    dl.dusk()
+                else:
+                    print("Error")
+                

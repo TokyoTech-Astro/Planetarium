@@ -26,6 +26,7 @@ class StepperMotor:
 
     
     def __exit__(self, type, value, traceback):
+        print("StpperMotor End")
         for i in range(4):
             GPIO.cleanup(self.pin[i])
 
@@ -70,6 +71,8 @@ class StepperMotor:
             GPIO.output(self.pin[2], L)
             GPIO.output(self.pin[3], L)
             time.sleep(self.t)
+            #0.05度
+            
 
             GPIO.output(self.pin[0], L)
             GPIO.output(self.pin[1], H)
