@@ -15,3 +15,7 @@ class Audio(Thread):
         print("Playing " + file_name)
         pygame.mixer.music.load(file_name)
         pygame.mixer.music.play()
+
+if __name__ == "__main__":
+    Audio("K2019").start()
+    time.sleep(10)
