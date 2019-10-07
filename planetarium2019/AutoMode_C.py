@@ -19,6 +19,7 @@ class StepperService(Thread):
     def run(self):
         print("StepperService start")
         global stepping
+        global continuing
         while continuing or not stepping == 0:
             if stepping == None:
                 break
@@ -56,7 +57,7 @@ def Automode_C(js,sc,dl,sm):
         if i.get("star") != None:
             for pin in i["star"]:   
                 sc.senddata(str(pin))
-                time.sleep(0.05)
+                time.sleep(0.08)
         if i.get("daylight") != None:
             if i.get("daylight"):
                 dl.dawn()
@@ -81,10 +82,10 @@ def Automode_C(js,sc,dl,sm):
             
         else:
             
-            time.sleep(i["interval"] - 0.06*switchCount)
+            time.sleep(i["interval"] - 0.09*switchCount)
             switchCount = 0
 
-    
+    continuing = False
     print("Automode_C end")
         
     

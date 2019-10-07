@@ -21,6 +21,8 @@ starpicturesPin = [5,6,7,8,9,11,12,13,16,21]
 starpicturesName = ["おうし","おおいぬ","やぎ","しし","エリダヌス","かに","ぎょしゃ","ふたご","こいぬ","オリオン"]
 
 
+
+
 class SocketCommunication_C():
 
     def __init__(self,s):
@@ -66,6 +68,29 @@ class StepperService(Thread):
                 self.stepper.rRotate(1)
                 stepping += 1
 
+def AutoModeReset(step):
+    global stepping
+    global continuing
+    continuing = True
+    GPIO.setmode(GPIO.BCM)
+    with StepperMotor(0.04) as sm2:
+        StepperService(sm2).start()
+        stepping += step
+        while True:
+            if stepping == 0:
+                continuing = False
+                break
+            time.sleep(0.03)
+    print("reset")
+                                
+    
+    sc.senddata("star")
+    print("Turn off the all StarPins")
+    for pin in allstarsPin:
+        sc.senddata(str(-pin))
+        time.sleep(0.06)
+    sc.senddata("exit")
+
 
 
 if __name__ == "__main__":
@@ -82,7 +107,7 @@ if __name__ == "__main__":
                         print("Turn off the all StarPins")
                         for pin in allstarsPin:
                             sc.senddata(str(-pin))
-                            time.sleep(0.05)
+                            time.sleep(0.06)
                         sc.senddata("exit")
                     elif mode == "star":
                         sc.senddata("star")
@@ -105,11 +130,11 @@ if __name__ == "__main__":
                                 elif inp == "allon":
                                     for pin in starpicturesPin:
                                         sc.senddata(str(pin))
-                                        time.sleep(0.05)
+                                        time.sleep(0.06)
                                 elif inp == "alloff":
                                     for pin in starpicturesPin:
                                         sc.senddata(str(-pin))
-                                        time.sleep(0.05)
+                                        time.sleep(0.06)
                                 else:
                                     print("Please enter the correct string/integer.")
 
@@ -150,13 +175,9 @@ if __name__ == "__main__":
                         with StepperMotor(0.25) as sm:
                             sc.senddata("auto")
                             Automode_C("K2019.json",sc,dl,sm)
-                            continuing = False
-                        time.sleep(1)
-                        continuing = True
-                        with StepperMotor(0.04) as sm:
-                            stepping -= 860
-                            StepperService(sm).start()
-
+                            time.sleep(1)
+                            AutoModeReset(-860)
+                        
                     elif mode == "exit":
                         print("exit")
                         sc.senddata("exit")

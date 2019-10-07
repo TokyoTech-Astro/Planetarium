@@ -28,7 +28,7 @@ def GPIOswitch(pin):
             print("GPIO 2 (一等星) on")
             GPIO.output(pin,1)
         else:
-            print("GPIO 3 (一等星) off")
+            print("GPIO 2 (一等星) off")
             GPIO.output(-pin,0)
     else:
         print("Error:PinNumber is over the management pin.")
