@@ -8,7 +8,6 @@ import threading
 from AutoMode_C import Automode_C
 from daylight import Daylight
 from switch import GPIOswitch
-import pygame
 from Audio import Audio
 
 Port = 50007
@@ -29,7 +28,6 @@ class SocketCommunication_C():
         self.port = Port
         self.dest = Destination
         self.s = s
-
         
     def setup(self):
         self.s.connect((self.dest, self.port))
@@ -43,6 +41,7 @@ class SocketCommunication_C():
 
     def __exit__(self, type, value, traceback):
         pass
+        #self.conn.close()
 
 
 class StepperService(Thread):
@@ -72,16 +71,8 @@ def AutoModeReset(step):
     global stepping
     global continuing
     continuing = True
-    GPIO.setmode(GPIO.BCM)
-    with StepperMotor(0.04) as sm2:
-        StepperService(sm2).start()
-        stepping += step
-        while True:
-            if stepping == 0:
-                continuing = False
-                break
-            time.sleep(0.03)
-    print("reset")
+    #GPIO.setmode(GPIO.BCM)
+    
                                 
     
     sc.senddata("star")
@@ -99,8 +90,7 @@ if __name__ == "__main__":
             sc = SocketCommunication_C(s)
             sc.setup()
             with Daylight() as dl:
-                while True:
-                
+                while True:             
                     mode = input("StarAllOf => all\nSwitching star => star\nPlaying audio =>audio\nRotation motor =>motor\nSwitching daylight => daylight\nAutomode => auto\nExit => exit\n\n")
                     if mode == "all":
                         sc.senddata("star")
@@ -172,12 +162,12 @@ if __name__ == "__main__":
 
                     elif mode == "auto":
                         continuing = True
-                        with StepperMotor(0.25) as sm:
-                            sc.senddata("auto")
-                            Automode_C("K2019.json",sc,dl,sm)
-                            time.sleep(1)
-                            AutoModeReset(-860)
                         
+                        sc.senddata("auto")
+                        Automode_C("test.json",sc,dl)
+
+                        
+                                            
                     elif mode == "exit":
                         print("exit")
                         sc.senddata("exit")

@@ -4,6 +4,7 @@ import time
 import json
 import RPi.GPIO as GPIO
 from Audio import Audio
+from StepperMotor import StepperMotor
 
 
 stepping = 0
@@ -17,7 +18,6 @@ class StepperService(Thread):
 
 
     def run(self):
-        print("StepperService start")
         global stepping
         global continuing
         while continuing or not stepping == 0:
@@ -44,48 +44,64 @@ class StepperService(Thread):
 allstarsPin = [2,3,5,6,7,8,9,11,12,13,16,21]
 allstarsName = ["一等星","恒星","おうし","おおいぬ","やぎ","しし","エリダヌス","かに","ぎょしゃ","ふたご","こいぬ","オリオン"]
 
-def Automode_C(js,sc,dl,sm):
+def Automode_C(js,sc,dl):
     print("AutoMode_C")
-    switchCount = 0
-    global stepping
-    global continuing
-    with open(js) as f:
-        sequence = json.load(f)
-    
-    StepperService(sm).start()
-    for i in sequence:
-        if i.get("star") != None:
-            for pin in i["star"]:   
-                sc.senddata(str(pin))
-                time.sleep(0.08)
-        if i.get("daylight") != None:
-            if i.get("daylight"):
-                dl.dawn()
-            else:
-                dl.dusk() 
-        if i.get("audio") != None:
-            name = i.get("audio")
-            Audio(name).start()
-
-        if i.get("motor") != None: 
-            stepping += i["motor"] 
+    with StepperMotor(0.02) as smFront:
+        switchCount = 0
+        motorCount = 0
+        global stepping
+        global continuing
+        with open(js) as f:
+            sequence = json.load(f)
         
-        if i["interval"] == "wait":
-            while True:
-                if stepping == 0:
-                    break
-                time.sleep(0.05)
-        elif i["interval"] == "end":
-            continuing = False
-            sc.senddata("exit")
-            time.sleep(2)
-            
-        else:
-            
-            time.sleep(i["interval"] - 0.09*switchCount)
-            switchCount = 0
+        StepperService(smFront).start()
+        for i in sequence:
+            if i.get("star") != None:
+                for pin in i["star"]:   
+                    sc.senddata(str(pin))
+                    time.sleep(0.08)
+            if i.get("daylight") != None:
+                if i.get("daylight"):
+                    dl.dawn()
+                else:
+                    dl.dusk() 
+            if i.get("audio") != None:
+                name = i.get("audio")
+                Audio(name).start()
 
-    continuing = False
-    print("Automode_C end")
+            if i.get("motor") != None: 
+                stepping += i["motor"] 
+                motorCount += i["motor"]
+            
+            if i["interval"] == "wait":
+                while True:
+                    if stepping == 0:
+                        break
+                    time.sleep(0.05)
+            elif i["interval"] == "end":
+                continuing = False
+
+            else:    
+                time.sleep(i["interval"] - 0.09*switchCount)
+                switchCount = 0
+
+    time.sleep(1)
+
+    with StepperMotor(0.04) as smRear:
+        StepperService(smRear).start()
+        stepping += -motorCount
+        sc.senddata("star")
+        print("Turn off the all StarPins")
+        for pin in allstarsPin:
+            sc.senddata(str(-pin))
+            time.sleep(0.06)
+        sc.senddata("exit")
+        while True:
+            if stepping == 0:
+                continuing = False
+                break
+            time.sleep(0.03)
+    sc.senddata("exit")
+    print("Automode_C end\n")
         
     

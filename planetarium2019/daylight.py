@@ -19,9 +19,10 @@ class Daylight:
 
 
     def __exit__(self, type, value, traceback):
+        '''
         GPIO.cleanup(DAWN_PIN)
         GPIO.cleanup(DUSK_PIN)
-
+        '''
 
     def dawn(self):
         print("daylight on")

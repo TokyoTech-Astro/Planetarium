@@ -26,9 +26,7 @@ class StepperMotor:
 
     
     def __exit__(self, type, value, traceback):
-        print("StpperMotor End")
-        for i in range(4):
-            GPIO.cleanup(self.pin[i])
+        pass
 
 
     def off(self):
