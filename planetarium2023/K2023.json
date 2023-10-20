@@ -1,0 +1,69 @@
+[
+    {
+        "comment":"恒星一等星on,time = 0",
+        "star":[,],
+        "interval":10
+    },
+    {
+        "motor":200,
+        "interval":"wait"
+    },
+
+
+    {
+        "comment":"おおいぬ座on",
+        "star": [],
+        "audio":"1おおいぬ座",
+        "interval":23
+    },
+    {
+        "motor":200,
+        "interval":"wait"
+    },
+
+
+    {
+        "comment":"こいぬ座on",
+        "star": [],
+        "audio":"2こいぬ座",
+        "interval":25
+    },
+    {
+        "motor":200,
+        "interval":"wait"
+    },
+
+
+    {
+        "comment":"オリオン座on",
+        "star": [],
+        "audio":"3オリオン座",
+        "interval":23
+    },
+    {
+        "motor":200,
+        "interval":"wait"
+    },
+
+
+    {
+        "comment":"冬の大三角on",
+        "star": [],
+        "audio":"4冬の大三角",
+        "interval":20
+    },
+
+
+    {
+        "comment":"原稿終了",
+        "interval":"wait"
+    },
+    {
+        "comment":"消灯",
+        "star":[,],
+        "interval":"wait" 
+    },
+    {
+        "interval":"end"
+    }
+]

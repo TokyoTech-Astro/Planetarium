@@ -1,0 +1,15 @@
+[
+    
+    {
+        "comment":"A02恒星一等星on,time = 0",
+        "motor":50,
+        "interval":3
+    },
+    {
+        "comment":"原稿終了",
+        "interval":"wait"
+    },
+    {
+        "interval":"end"
+    }
+]
