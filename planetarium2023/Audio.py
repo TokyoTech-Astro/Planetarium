@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pygame
 import time
 import sys
@@ -6,7 +7,7 @@ import threading
 
 class Audio(Thread):
     def __init__(self,name):
-        super().__init__()
+        super(Audio,self).__init__()
         self.name = name
 
     def run(self):

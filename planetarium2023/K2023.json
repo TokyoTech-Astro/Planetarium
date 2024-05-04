@@ -1,69 +1,78 @@
 [
-    {
-        "comment":"恒星一等星on,time = 0",
-        "star":[,],
-        "interval":10
-    },
-    {
-        "motor":200,
-        "interval":"wait"
-    },
-
-
-    {
-        "comment":"おおいぬ座on",
-        "star": [],
-        "audio":"1おおいぬ座",
-        "interval":23
-    },
-    {
-        "motor":200,
-        "interval":"wait"
-    },
-
-
-    {
-        "comment":"こいぬ座on",
-        "star": [],
-        "audio":"2こいぬ座",
-        "interval":25
-    },
-    {
-        "motor":200,
-        "interval":"wait"
-    },
-
-
-    {
-        "comment":"オリオン座on",
-        "star": [],
-        "audio":"3オリオン座",
-        "interval":23
-    },
-    {
-        "motor":200,
-        "interval":"wait"
-    },
-
-
-    {
-        "comment":"冬の大三角on",
-        "star": [],
-        "audio":"4冬の大三角",
-        "interval":20
-    },
-
-
-    {
-        "comment":"原稿終了",
-        "interval":"wait"
-    },
-    {
-        "comment":"消灯",
-        "star":[,],
-        "interval":"wait" 
-    },
-    {
-        "interval":"end"
-    }
+	{
+		"audio":"1dounyu",
+		"star":[4,-14],
+		"interval":36
+	},
+	{
+		"star":[-4,14],
+		"interval":3
+	},
+	{
+		"audio":"2hokkyokusei1",
+		"interval":55
+	},
+	{	
+		"star":[19],
+		"audio":"3hokkyokusei2",
+		"interval":34
+	},
+	{
+		"star":[-19,11],
+		"interval":3
+	},
+	{
+		"motor":1350,
+		"audio":"4huyu",
+		"interval":37
+	},
+	{
+		"star":[-11,5],
+		"interval":7.5
+	},
+	{
+		"star":[13],
+		"interval":39
+	},
+	{
+		"star":[26],
+		"interval":25
+	},
+	{
+		"star":[-5,-13,-26],
+		"motor":-2700,
+		"audio":"5natu1",
+		"interval":57
+	},
+	{
+		"audio":"6natu2",
+		"interval":29
+	},
+	{
+		"star":[9],
+		"interval":49
+	},
+	{
+		"audio":"7natu3",
+		"interval":9
+	},
+	{
+		"star":[21],
+		"interval":40
+	},
+	{
+		"star":[-9,-21],
+		"audio":"8owari",
+		"interval":47
+	},
+	{
+		"interval":120
+	},
+	{
+		"motor":1350,
+		"interval":"wait"
+	},
+	{
+		"interval":"end"
+	}
 ]
