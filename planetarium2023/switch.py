@@ -1,8 +1,9 @@
+# -*- coding: utf-8 -*-
 import RPi.GPIO as GPIO
 from gpio_maintaner import GPIOMaintainer
 
-starpicturesPin = [5,6,7,8,9,11,12,13,16,21]
-starpicturesName = ["おうし","おおいぬ","やぎ","しし","エリダヌス","かに","ぎょしゃ","ふたご","こいぬ","オリオン"]
+starpicturesPin = [9,11,5,13,19,26,25,8,7,12,20,21]
+starpicturesName = ["さそり座","ペガサス","おおいぬ","こいぬ","こぐま","オリオン","none","none","none","none","none","いて"]
 
 def GPIOswitch(pin):
     #pin:int
@@ -16,19 +17,19 @@ def GPIOswitch(pin):
         else:
             print("GPIO {0} ({1}座) off".format(str(abs(pin)),Starpicture))
             GPIO.output(-pin,0)
-    elif abs(pin) == 3:
+    elif abs(pin) == 4:
         if pin > 0:
-            print("GPIO 3 (恒星) on")
+            print("GPIO 4 (恒星) off")
             GPIO.output(pin,1)
         else:
-            print("GPIO 3 (恒星) off")
+            print("GPIO 4 (恒星) on")
             GPIO.output(-pin,0)
-    elif abs(pin) == 2:
+    elif abs(pin) == 14:
         if pin > 0:
-            print("GPIO 2 (一等星) on")
+            print("GPIO 14 (一等星) on")
             GPIO.output(pin,1)
         else:
-            print("GPIO 2 (一等星) off")
+            print("GPIO 14 (一等星) off")
             GPIO.output(-pin,0)
     else:
         print("Error:PinNumber is over the management pin.")
