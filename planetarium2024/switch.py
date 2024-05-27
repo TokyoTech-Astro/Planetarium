@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import sys
 import RPi.GPIO as GPIO
 from gpio_maintaner import GPIOMaintainer
 
@@ -19,11 +20,11 @@ def GPIOswitch(pin):
             GPIO.output(-pin,0)
     elif abs(pin) == 4:
         if pin > 0:
-            print("GPIO 4 (恒星) off")
-            GPIO.output(pin,1)
-        else:
             print("GPIO 4 (恒星) on")
-            GPIO.output(-pin,0)
+            GPIO.output(pin,0)
+        else:
+            print("GPIO 4 (恒星) off")
+            GPIO.output(-pin,1)
     elif abs(pin) == 14:
         if pin > 0:
             print("GPIO 14 (一等星) on")
@@ -38,9 +39,12 @@ def GPIOswitch(pin):
 
 if __name__ == "__main__":
     with GPIOMaintainer():
-        while True:
-            pin = input("Please enter the pin number or exit")
-            if pin == "exit":
-                break
-            else:
-                GPIOswitch(int(pin))
+        if len(sys.argv) == 1:
+            while True:
+                pin = input("Please enter the pin number or exit")
+                if pin == "exit":
+                    break
+                else:
+                    GPIOswitch(int(pin))
+        else:
+            GPIOswitch(int(sys.argv[1]))
