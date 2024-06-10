@@ -1,18 +1,9 @@
 "use client"
 
 import * as React from 'react';
-import Box from '@mui/material/Box';
-import Switch from '@mui/material/Switch';
-import FormGroup from '@mui/material/FormGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button'
-import ButtonGroup from '@mui/material/ButtonGroup'
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
+import {Box, Switch, FormGroup, FormControlLabel, TextField, Button, ButtonGroup, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle} from '@mui/material';
+import { Dispatch, SetStateAction } from 'react';
+import { propagateServerField } from 'next/dist/server/lib/render-server';
 
 export function AlertDialog() {
   const [open, setOpen] = React.useState(false);
@@ -51,7 +42,14 @@ export function AlertDialog() {
   );
 }
 
-export default function Home() {
+type PropsType = {
+  ledState: {
+    state: boolean
+    setState: Dispatch<SetStateAction<boolean>>
+  }
+}
+
+export default function Home({ledState}: PropsType) {
   return (
     <Box sx={{ p:1, border: '1px dashed grey' }}>
       <Box sx={{ p: 1, border: '1px dashed grey' }}>

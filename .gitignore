@@ -2,3 +2,4 @@ __pycache__
 node_modules
 .next/
 *storybook.log
+next-env.d.ts
