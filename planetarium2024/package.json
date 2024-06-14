@@ -16,7 +16,9 @@
     "@mui/material": "^5.15.19",
     "next": "14.2.3",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^1.5.0",
