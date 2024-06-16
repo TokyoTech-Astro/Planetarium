@@ -30,8 +30,8 @@ export default function StopButton() {
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleClose} autoFocus color='error'>いいえ</Button>
-            <Button onClick={handleClose} variant='outlined' color='error'>はい</Button>
+            <Button onClick={handleClose}>いいえ</Button>
+            <Button onClick={handleClose}>はい</Button>
           </DialogActions>
         </Dialog>
       </React.Fragment>

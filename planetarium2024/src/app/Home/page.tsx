@@ -2,10 +2,9 @@
 
 import * as React from 'react';
 import {Box} from '@mui/material';
-import LEDList from '@/app/Home/ledList';
-import AutoModeManage from '@/app/Home/autoModeManage';
-import MotorManage from '@/app/Home/motorManage';
-import ConnectionButton from '@/app/Home/connectButton';
+import LEDList from '@/app/home/ledManage';
+import AutoModeManage from '@/app/home/autoModeManage';
+import MotorManage from '@/app/home/motorManage';
 
 export default function Home() {
   return (
@@ -13,7 +12,6 @@ export default function Home() {
       <AutoModeManage />
       <LEDList />
       <MotorManage />
-      <ConnectionButton />
     </Box>
   );
 }

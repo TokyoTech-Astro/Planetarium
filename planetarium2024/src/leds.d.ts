@@ -1,6 +1,6 @@
-declare module '@/LEDs.json' {
+declare module '@/leds.json' {
     const data: {
-        pin: string
+        pin: number
         name: string
     }[]
 
