@@ -3,10 +3,11 @@ from gpiozero import DigitalOutputDevice
 import json
 
 with open('../leds.json') as f:
-    leds = json.load(f)
+    fjson = json.load(f)
 
-for pin in leds.items():
-    leds[pin] = DigitalOutputDevice(pin)
+leds = {}
+for led in fjson:
+    leds[int(led['pin'])] = DigitalOutputDevice(int(led['pin']))
 
 app = FastAPI()
 
@@ -16,9 +17,10 @@ def write(pin:int, state:bool):
         leds[pin].on()
     else:
         leds[pin].off()
-
     return
 
 @app.get("/led/{pin}")
 def state(pin:int):
-    return {"pin": pin, "state": leds[pin].value}
+    for led in fjson:
+        if int(led['pin']) == pin:
+            return {"name": led['name'], "state": leds[pin].value}
