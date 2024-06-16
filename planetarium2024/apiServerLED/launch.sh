@@ -1,0 +1,1 @@
+uvicorn main:app --host `ifconfig wlan0 | grep -oP '(?<=inet\s)\d+\.\d+\.\d+\.\d+'` --port 8000
