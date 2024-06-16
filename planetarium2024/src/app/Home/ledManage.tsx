@@ -7,7 +7,7 @@ export default function LEDList() {
       sx={{ p: 1, border: '1px dashed grey' }}
     >
       { leds.map ( led => (
-        <Box sx={{ border: '1px dashed grey' }}>
+        <Box sx={{ border: '1px dashed grey' }} key={led.pin}>
           <ButtonGroup sx={{ p: 1, border: '1px dashed grey' }}>
             <Button> ON </Button>
             <Button color='error'> OFF </Button>
