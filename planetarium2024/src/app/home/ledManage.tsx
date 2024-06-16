@@ -1,5 +1,5 @@
 import { FormGroup, ButtonGroup, Button, Box } from "@mui/material"
-import leds from '@/LEDs.json'
+import leds from '@/leds.json'
 
 export default function LEDList() {
   return (
