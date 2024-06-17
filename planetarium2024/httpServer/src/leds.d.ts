@@ -1,4 +1,4 @@
-declare module '@/../../leds.json' {
+declare module '@/leds.json' {
     const data: {
         pin: number
         name: string
