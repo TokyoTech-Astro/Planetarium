@@ -13,6 +13,7 @@ app = FastAPI()
 
 @app.put("/led/{pin}")
 def write(pin:int, state:bool):
+    global leds
     if state:
         leds[pin].on()
     else:
@@ -21,6 +22,7 @@ def write(pin:int, state:bool):
 
 @app.get("/led/{pin}")
 def state(pin:int):
+    global leds
     for led in fjson:
         if int(led['pin']) == pin:
-            return {"name": led['name'], "state": leds[pin].value}
+            return {"pin": pin, "name": led['name'], "state": leds[pin].value}
