@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from gpiozero import DigitalOutputDevice
 import threading
 import time
+from fastapi.middleware.cors import CORSMiddleware
 
 _pins = [
     DigitalOutputDevice(21),
@@ -16,6 +17,17 @@ _speed: str
 _ir: bool = False
 
 app = FastAPI()
+
+origins = [
+    "*"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 @app.post("/motor")
 def rotation(dir: str, deg: int, speed: str):

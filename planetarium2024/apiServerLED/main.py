@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from gpiozero import DigitalOutputDevice
 import json
+from fastapi.middleware.cors import CORSMiddleware
 
-with open('../leds.json') as f:
+with open('leds.json') as f:
     fjson = json.load(f)
 
 leds = {}
@@ -10,6 +11,17 @@ for led in fjson:
     leds[int(led['pin'])] = DigitalOutputDevice(int(led['pin']))
 
 app = FastAPI()
+
+origins = [
+    "*"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 @app.put("/led/{pin}")
 def write(pin:int, state:bool):
