@@ -8,7 +8,7 @@ import MotorManage from '@/app/home/motorManage';
 
 export default function Home() {
   return (
-    <Box sx={{ p:1, border: '1px dashed grey' }}>
+    <Box sx={{ p:1 }}>
       <AutoModeManage />
       <LEDList />
       <MotorManage />

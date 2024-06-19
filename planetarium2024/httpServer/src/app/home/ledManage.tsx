@@ -4,20 +4,18 @@ import leds from '@/leds.json'
 
 export default function LEDList() {
   return (
-    <FormGroup
-      sx={{ p: 1, border: '1px dashed grey' }}
-    >
+    <FormGroup sx={{ m: 1, p: 1, border: '3px solid grey', maxWidth: 320 }}>
       { leds.map ( led => (
-        <Box sx={{ border: '1px dashed grey' }} key={led.pin}>
-          <ButtonGroup sx={{ p: 1, border: '1px dashed grey' }}>
+        <Box key={led.pin} >
+          <ButtonGroup sx={{ p: 1 }}>
             <Button onClick={
               async () => {
-                const response = await axios.put(`http://pi-starsphere:8000/led/${led.pin}?state=True`)
+                const response = await axios.put(`http://pi-starsphere.local:8000/led/${led.pin}?state=True`)
               }
             }> ON </Button>
             <Button onClick={
               async () => {
-                const response = await axios.put(`http://pi-starsphere:8000/led/${led.pin}?state=False`)
+                const response = await axios.put(`http://pi-starsphere.local:8000/led/${led.pin}?state=False`)
               }
             } color='error'> OFF </Button>
           </ButtonGroup>

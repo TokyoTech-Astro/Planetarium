@@ -1,1 +1,1 @@
-uvicorn main:app --host `ifconfig wlan0 | grep -oP '(?<=inet\s)\d+\.\d+\.\d+\.\d+'` --port 8000
+uvicorn main:app --host pi-starsphere.local --port 8000
