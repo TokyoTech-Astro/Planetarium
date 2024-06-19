@@ -13,14 +13,13 @@ _state: bool = False
 _dir: str
 _deg: int
 _speed: str
+_ir: bool = False
 
 app = FastAPI()
 
 @app.post("/motor")
 def rotation(dir: str, deg: int, speed: str):
     global _pins, _state, _dir, _deg, _speed
-    if _state:
-        return {"name": "motor", "error": "(rejected) The motor is already rotating. Wait until it stops.", "direction": _dir, "degree": str(_deg), "speed": _speed}
     _dir = dir
     _deg = deg
     _speed = speed
@@ -40,7 +39,10 @@ def state():
 
 
 def rotate():
-    global _pins, _state, _dir, _deg, _speed
+    global _pins, _state, _dir, _deg, _speed, _ir
+
+    _ir ^= 1
+    ir = _ir
 
     if _deg >= 0:
         step = int(3*_deg/0.2)
@@ -59,6 +61,8 @@ def rotate():
     if _dir == "forward":
         _state = True
         for _ in range(step):
+            if ir != _ir:
+                return
             _pins[0].on()
             _pins[1].on()
             _pins[2].off()
@@ -87,6 +91,8 @@ def rotate():
     elif _dir == "back":
         _state = True
         for _ in range(step):
+            if ir != _ir:
+                return
             _pins[0].on()
             _pins[1].on()
             _pins[2].off()
