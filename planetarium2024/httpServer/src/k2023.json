@@ -1,6 +1,6 @@
 [
 	{
-		"audio":"1dounyu",
+		"audio":"1dounyu.wav",
 		"star":[4,-14],
 		"interval":36
 	},
@@ -9,12 +9,12 @@
 		"interval":3
 	},
 	{
-		"audio":"2hokkyokusei1",
+		"audio":"2hokkyokusei1.wav",
 		"interval":55
 	},
 	{	
 		"star":[19],
-		"audio":"3hokkyokusei2",
+		"audio":"3hokkyokusei2.wav",
 		"interval":34
 	},
 	{
@@ -22,8 +22,8 @@
 		"interval":3
 	},
 	{
-		"motor":1350,
-		"audio":"4huyu",
+		"motor":270,
+		"audio":"4huyu.wav",
 		"interval":37
 	},
 	{
@@ -40,12 +40,12 @@
 	},
 	{
 		"star":[-5,-13,-26],
-		"motor":-2700,
-		"audio":"5natu1",
+		"motor":-540,
+		"audio":"5natu1.wav",
 		"interval":57
 	},
 	{
-		"audio":"6natu2",
+		"audio":"6natu2.wav",
 		"interval":29
 	},
 	{
@@ -53,7 +53,7 @@
 		"interval":49
 	},
 	{
-		"audio":"7natu3",
+		"audio":"7natu3.wav",
 		"interval":9
 	},
 	{
@@ -62,14 +62,14 @@
 	},
 	{
 		"star":[-9,-21],
-		"audio":"8owari",
+		"audio":"8owari.wav",
 		"interval":47
 	},
 	{
 		"interval":120
 	},
 	{
-		"motor":1350,
+		"motor":270,
 		"interval":"wait"
 	},
 	{
