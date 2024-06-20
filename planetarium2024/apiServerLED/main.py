@@ -25,20 +25,22 @@ app.add_middleware(
 
 @app.put("/led/{pin}")
 def write(pin:int, state:bool):
-    global leds
-    if state:
-        leds[pin].on()
-        print(f'Turn on. (pin:{pin}, name:{led['name']})')
-        return {"type": "led", "pin": pin, "name": led['name'], "state": leds[pin].value}
-    else:
-        leds[pin].off()
-        print(f'Turn off. (pin:{pin}, name:{led['name']})')
-        return {"type": "led", "pin": pin, "name": led['name'], "state": leds[pin].value}
+    global leds, fjson
+    for led in fjson:
+        if int(led['pin']) == pin:
+            if state:
+                leds[pin].on()
+                print(f"Turn on. (pin:{pin}, name:{led['name']})")
+                return {"type": "led", "pin": pin, "name": led['name'], "state": leds[pin].value}
+            else:
+                leds[pin].off()
+                print(f"Turn off. (pin:{pin}, name:{led['name']})")
+                return {"type": "led", "pin": pin, "name": led['name'], "state": leds[pin].value}
 
 
 @app.get("/led/{pin}")
 def state(pin:int):
-    global leds
+    global leds, fjson
     for led in fjson:
         if int(led['pin']) == pin:
             return {"type": "led", "pin": pin, "name": led['name'], "state": leds[pin].value}
