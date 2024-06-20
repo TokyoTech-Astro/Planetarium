@@ -1,1 +1,1 @@
-uvicorn main:app --host pi-controller.local --port 8001
+uvicorn main:app --host pi-controller.local --port 8001 --reload

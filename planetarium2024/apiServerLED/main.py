@@ -28,13 +28,17 @@ def write(pin:int, state:bool):
     global leds
     if state:
         leds[pin].on()
+        print(f'Turn on. (pin:{pin}, name:{led['name']})')
+        return {"type": "led", "pin": pin, "name": led['name'], "state": leds[pin].value}
     else:
         leds[pin].off()
-    return
+        print(f'Turn off. (pin:{pin}, name:{led['name']})')
+        return {"type": "led", "pin": pin, "name": led['name'], "state": leds[pin].value}
+
 
 @app.get("/led/{pin}")
 def state(pin:int):
     global leds
     for led in fjson:
         if int(led['pin']) == pin:
-            return {"pin": pin, "name": led['name'], "state": leds[pin].value}
+            return {"type": "led", "pin": pin, "name": led['name'], "state": leds[pin].value}

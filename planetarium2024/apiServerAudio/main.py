@@ -1,19 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import pygame
-from threading import Thread
+from pygame import mixer
 
-class Audio(Thread):
-    def __init__(self,name):
-        super(Audio,self).__init__()
-        self.name = name
-
-    def run(self):
-        pygame.mixer.init()
-        file_name = self.name
-        print("Playing " + file_name)
-        pygame.mixer.music.load(file_name)
-        pygame.mixer.music.play()
+mixer.init()
 
 app = FastAPI()
 
@@ -30,9 +19,14 @@ app.add_middleware(
 
 @app.post("/audio")
 def start(filename: str):
-    Audio(filename).start()
-    return
+    mixer.music.load(filename)
+    mixer.music.play()
+    print(f'Start playing {filename}.')
+    return {'type': 'audio', 'satate': 'started'}
 
 @app.get("/audio")
 def state():
-    return
+    if mixer.music.get_busy():
+        return {'type': 'audio', 'state': 'playing'}
+    else:
+        return {'type': 'audio', 'state': 'No audio is playing.'}

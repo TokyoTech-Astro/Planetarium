@@ -1,12 +1,8 @@
 [
 	{
 		"audio":"1dounyu.wav",
-		"star":[4,-14],
-		"interval":36
-	},
-	{
-		"star":[-4,14],
-		"interval":3
+		"star":[4,14],
+		"interval":39
 	},
 	{
 		"audio":"2hokkyokusei1.wav",
