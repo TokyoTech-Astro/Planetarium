@@ -95,7 +95,7 @@ def rotate():
                 _pins[3].on()
                 time.sleep(sleepTime)
             
-            elif dir == "back":
+            elif _dir == "back":
                 _pins[0].on()
                 _pins[1].on()
                 _pins[2].off()

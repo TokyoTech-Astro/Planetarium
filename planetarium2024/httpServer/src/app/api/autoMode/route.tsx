@@ -56,8 +56,8 @@ export async function  POST() {
             //　　　　　　　　　　　　　　　　　　　　↓後で実装
             if(typeof(i["interval"]) == "string"){ }
             else if(i["interval"] !== undefined){
-                await sleep(i["interval"])
                 console.log(`Interval of ${i["interval"]} sec.`)
+                await sleep(i["interval"])
             }
         }
     }
