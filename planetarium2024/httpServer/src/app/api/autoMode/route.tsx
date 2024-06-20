@@ -8,17 +8,17 @@ export async function  POST() {
                 for(let pin of i["star"]){
                     if(pin > 0){
                         try {
-                            await axios.put(`http://pi-starsphere.local:8000/led/${pin}?state=True`)
-                            console.log(`pin: ${pin}, state: True`)
+                            const res = await axios.put(`http://pi-starsphere.local:8000/led/${pin}?state=True`)
+                            console.log(`Turn on ${pin}.`)
                         }
-                        catch (e) {}
+                        catch (e) { console.log(e) }
                     }
                     else if(pin <0){
                         try {
-                            await axios.put(`http://pi-starsphere.local:8000/led/${-pin}?state=False`)
-                            console.log(`pin: ${pin}, state: False`)
+                            const res = await axios.put(`http://pi-starsphere.local:8000/led/${-pin}?state=False`)
+                            console.log(`Turn off ${pin}.`)
                         }
-                        catch (e) {}
+                        catch (e) { console.log(e) }
                     }
                 }
             }
@@ -27,22 +27,28 @@ export async function  POST() {
         if("motor" in i){
             try {
                 if(i["motor"] !== undefined){
-                    if(i["motor"] >= 0) await axios.post(`http://pi-controller.local:8000/motor?dir=forward&deg=${i["motor"]}&speed=medium`)
-                    else if(i["motor"] < 0) await axios.post(`http://pi-controller.local:8000/motor?dir=back&deg=${-i["motor"]}&speed=medium`)
-                    console.log(`Playing ${i["audio"]}`)
+                    if(i["motor"] >= 0) {
+                        const res = await axios.post(`http://pi-controller.local:8000/motor?dir=forward&deg=${i["motor"]}&speed=medium`)
+                        console.log(`Start rotation. (dir:forward, deg:${i["motor"]}, speed:medium)`)
+                    }
+                    else if(i["motor"] < 0) {
+                        const res = await axios.post(`http://pi-controller.local:8000/motor?dir=back&deg=${-i["motor"]}&speed=medium`)
+                        console.log(`Start rotation. (dir:back, deg:${i["motor"]}, speed:medium)`)
+                    }
+
                 }
             }
-            catch (e) {  } 
+            catch (e) { console.log(e) } 
         }
 
         if("audio" in i){
             try {
                 if(i["audio"] !== undefined){
-                    await axios.post(`http://pi-controller.local:8001/audio?filename=${i["audio"]}`)
-                    console.log(`Playing ${i["audio"]}`)
+                    const res = await axios.post(`http://pi-controller.local:8001/audio?filename=${i["audio"]}`)
+                    console.log(`Playing ${i["audio"]}.`)
                 }
             }
-            catch (e) {  }
+            catch (e) { console.log(e) }
         }
 
         if("interval" in i){
@@ -51,9 +57,10 @@ export async function  POST() {
             if(typeof(i["interval"]) == "string"){ }
             else if(i["interval"] !== undefined){
                 await sleep(i["interval"])
+                console.log(`Interval of ${i["interval"]} sec.`)
             }
         }
     }
 
-    return new Response('')
+    return new Response("")
 }

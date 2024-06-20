@@ -41,7 +41,7 @@ def rotation(dir: str, deg: int, speed: str):
     _deg = deg
     _steps = 5*deg
     _speed = speed
-    print(f'Start otationg (dir:{_dir}, deg:{_deg}, speed:{_speed})')
+    print(f'Start rotation. (dir:{_dir}, deg:{_deg}, speed:{_speed})')
     return {'type': 'motor', 'state': 'started', "direction": _dir, "degree": _deg, "speed": _speed}
 
 @app.get("/motor")
