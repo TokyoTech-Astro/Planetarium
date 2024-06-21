@@ -1,20 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from gpiozero import DigitalOutputDevice
-import threading
-import time
-        
-_pins = [
-    DigitalOutputDevice(21),
-    DigitalOutputDevice(12),
-    DigitalOutputDevice(8),
-    DigitalOutputDevice(23)
-]
-_dir = "forward"
-_deg = 0
-_steps = 0
-_speed = "medium"
-_thread: threading.Thread
+import subprocess
 
 app = FastAPI()
 
@@ -29,99 +15,21 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+_proc: subprocess.Popen
+_dir:str
+_deg:int
+_speed:str
+
 @app.post("/motor")
 def rotation(dir: str, deg: int, speed: str):
-    global _dir, _deg, _steps, _speed, _thread
+    global _proc, _dir, _deg, _speed
     try:
-        _thread
+        _proc.kill()
     except:
-        _thread = threading.Thread(target=rotate)
-        _thread.start()
+        pass
+    _proc = subprocess.Popen(["python", "rotate.py", dir, str(deg), speed])
     _dir = dir
     _deg = deg
-    _steps = 5*deg
     _speed = speed
-    print(f'Start rotation. (dir:{_dir}, deg:{_deg}, speed:{_speed})')
-    return {'type': 'motor', 'state': 'started', "direction": _dir, "degree": _deg, "speed": _speed}
-
-@app.get("/motor")
-def state():
-    global _dir, _deg, _steps, _speed
-    if _steps > 0:
-        return {"type": "motor", "state": "rotating", "direction": _dir, "degree": _deg, "speed": _speed}
-    else:
-        return {"type": "motor", "state": "stop"}
-    
-
-
-
-def rotate():
-    global _pins,_dir,_steps,_speed
-    while True:
-        if _steps > 0:
-            _steps-=1
-
-            if _speed == "low":
-                sleepTime = 0.012
-            elif _speed == "medium":
-                sleepTime = 0.006
-            elif _speed == "high":
-                sleepTime = 0.003
-            else:
-                return
-            
-            if _dir == "forward":
-                _pins[0].on()
-                _pins[1].on()
-                _pins[2].off()
-                _pins[3].off()
-                time.sleep(sleepTime)
-
-                _pins[0].off()
-                _pins[1].on()
-                _pins[2].on()
-                _pins[3].off()
-                time.sleep(sleepTime)
-
-                _pins[0].off()
-                _pins[1].off()
-                _pins[2].on()
-                _pins[3].on()
-                time.sleep(sleepTime)
-
-                _pins[0].on()
-                _pins[1].off()
-                _pins[2].off()
-                _pins[3].on()
-                time.sleep(sleepTime)
-            
-            elif _dir == "back":
-                _pins[0].on()
-                _pins[1].on()
-                _pins[2].off()
-                _pins[3].off()
-                time.sleep(sleepTime)
-
-                _pins[0].on()
-                _pins[1].off()
-                _pins[2].off()
-                _pins[3].on()
-                time.sleep(sleepTime)
-
-                _pins[0].off()
-                _pins[1].off()
-                _pins[2].on()
-                _pins[3].on()
-                time.sleep(sleepTime)
-
-                _pins[0].off()
-                _pins[1].on()
-                _pins[2].on()
-                _pins[3].off()
-                time.sleep(sleepTime)
-
-            else:
-                return
-        
-        else:
-            time.sleep(0.02)
+    print(f'Start rotation. (dir:{dir}, deg:{deg}, speed:{speed})')
+    return {'type': 'motor', 'state': 'started', "direction": dir, "degree": deg, "speed": speed}
