@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from gpiozero import DigitalOutputDevice
 import json
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,12 +30,12 @@ def write(pin:int, state:bool):
         if int(led['pin']) == pin:
             if state:
                 leds[pin].on()
-                print(f"Turn on. (pin:{pin}, name:{led['name']})")
-                return {"type": "led", "pin": pin, "name": led['name'], "state": leds[pin].value}
+                print(f'Turn on {led['name']}(pin{pin}).')
+                return Response(f'Turn on {led['name']}(pin{pin}).')
             else:
                 leds[pin].off()
-                print(f"Turn off. (pin:{pin}, name:{led['name']})")
-                return {"type": "led", "pin": pin, "name": led['name'], "state": leds[pin].value}
+                print(f'Turn off {led['name']}(pin{pin}).')
+                return Response(f'Turn off {led['name']}(pin{pin}).')
 
 
 @app.get("/led/{pin}")

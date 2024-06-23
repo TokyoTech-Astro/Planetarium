@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 import subprocess
 
@@ -21,15 +21,27 @@ _deg:int
 _speed:str
 
 @app.post("/motor")
-def rotation(dir: str, deg: int, speed: str):
-    global _proc, _dir, _deg, _speed
-    try:
-        _proc.kill()
-    except:
+def rotation(query:str, dir:str="", deg:int=0, speed:str=""):
+    if query == "start":
+        global _proc, _dir, _deg, _speed
+        try:
+            _proc.kill()
+        except:
+            pass
+        _proc = subprocess.Popen(["python", "rotate.py", dir, str(deg), speed])
+        _dir = dir
+        _deg = deg
+        _speed = speed
+        print(f'Start rotation. (direction={dir}, degree={deg}, speed={speed})')
+        return Response(f'Start rotation. (direction={dir}, degree={deg}, speed={speed})')
+    
+    elif query == "stop":
+        try:
+            _proc.kill()
+            print('Stop rotation')
+            return Response('Stop rotation')
+        except:
+            return Response('Not rotating.')
+
+    else:
         pass
-    _proc = subprocess.Popen(["python", "rotate.py", dir, str(deg), speed])
-    _dir = dir
-    _deg = deg
-    _speed = speed
-    print(f'Start rotation. (dir:{dir}, deg:{deg}, speed:{speed})')
-    return {'type': 'motor', 'state': 'started', "direction": dir, "degree": deg, "speed": speed}

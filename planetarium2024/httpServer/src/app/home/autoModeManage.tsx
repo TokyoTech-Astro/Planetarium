@@ -5,7 +5,7 @@ import axios from 'axios'
 export default function AutoModeManage() {
   const onClick = async () => {
     try {
-      const res = await axios.post('http://pi-controller.local:3000/api/autoMode')
+      const res = await axios.post('http://pi-controller.local:3000/api/autoMode?query=start')
       console.log(res)
     }
     catch (e) { console.error(e) }

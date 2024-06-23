@@ -7,14 +7,14 @@ export default function MotorManage() {
     const deg: number = Number(formData.get("degree"))
     if(deg >= 0) {
       try {
-        const res = await axios.post(`http://pi-controller.local:8000/motor?dir=forward&deg=${deg}&speed=${speed}`)
+        const res = await axios.post(`http://pi-controller.local:8000/motor?query=start&dir=forward&deg=${deg}&speed=${speed}`)
         console.log(res)
       }
       catch (e) { console.error(e) }
     }
     else if(deg < 0) {
       try {
-        const res = await axios.post(`http://pi-controller.local:8000/motor?dir=back&deg=${-deg}&speed=${speed}`)
+        const res = await axios.post(`http://pi-controller.local:8000/motor?query=start&dir=back&deg=${-deg}&speed=${speed}`)
         console.log(res)
       }
       catch (e) { console.error(e) }
