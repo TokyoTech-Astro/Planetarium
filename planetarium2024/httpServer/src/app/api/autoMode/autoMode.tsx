@@ -17,7 +17,7 @@ const putLed = async (pin: number, state: boolean) => {
         const res = await axios.put(`http://pi-starsphere.local:8000/led/${pin}?state=${state}`)
         console.log(`${yellow}■${reset} Set LED state. (pin:${pin}, state:${state}).`)
     }
-    catch (e) { console.log(e) }
+    catch (e) { console.error(e) }
 }
 
 const handleLed = (pins: number[] | undefined) => {
@@ -34,7 +34,7 @@ const postMotor = async (dir:string, deg:number, speed:string) => {
         const res = await axios.post(`http://pi-controller.local:8000/motor?dir=${dir}&deg=${deg}&speed=${speed}`)
         console.log(`${green}■${reset} Start rotation. (dir:${dir}, deg:${deg}, speed:${speed})`)
     }
-    catch (e) { console.log(e) }
+    catch (e) { console.error(e) }
 }
 
 const handleMotor = (deg: number | undefined) => {
@@ -51,7 +51,7 @@ const postAudio = async (filename: string | undefined) => {
             console.log(`${blue}■${reset} Playing ${filename}.`)
         }
     }
-    catch (e) { console.log(e) }
+    catch (e) { console.error(e) }
 }
 
 const handleInterval = async (interval: string | number | undefined) => {

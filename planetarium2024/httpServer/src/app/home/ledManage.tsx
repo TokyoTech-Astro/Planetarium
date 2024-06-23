@@ -10,12 +10,20 @@ export default function LEDList() {
           <ButtonGroup sx={{ p: 1 }}>
             <Button onClick={
               async () => {
-                const response = await axios.put(`http://pi-starsphere.local:8000/led/${led.pin}?state=True`)
+                try {
+                  const res = await axios.put(`http://pi-starsphere.local:8000/led/${led.pin}?state=True`)
+                  console.log(res)
+                }
+                catch (e) { console.error(e) }
               }
             }> ON </Button>
             <Button onClick={
               async () => {
-                const response = await axios.put(`http://pi-starsphere.local:8000/led/${led.pin}?state=False`)
+                try {
+                  const res = await axios.put(`http://pi-starsphere.local:8000/led/${led.pin}?state=False`)
+                  console.log(res)
+                }
+                catch (e) { console.error(e) }
               }
             } color='error'> OFF </Button>
           </ButtonGroup>

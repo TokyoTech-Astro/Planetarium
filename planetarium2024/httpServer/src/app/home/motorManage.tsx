@@ -5,8 +5,20 @@ import React from "react"
 export default function MotorManage() {
   const onSubmit = async (formData: FormData) => {
     const deg: number = Number(formData.get("degree"))
-    if(deg >= 0) await axios.post(`http://pi-controller.local:8000/motor?dir=forward&deg=${deg}&speed=${speed}`)
-    else if(deg < 0) await axios.post(`http://pi-controller.local:8000/motor?dir=back&deg=${-deg}&speed=${speed}`)
+    if(deg >= 0) {
+      try {
+        const res = await axios.post(`http://pi-controller.local:8000/motor?dir=forward&deg=${deg}&speed=${speed}`)
+        console.log(res)
+      }
+      catch (e) { console.error(e) }
+    }
+    else if(deg < 0) {
+      try {
+        const res = await axios.post(`http://pi-controller.local:8000/motor?dir=back&deg=${-deg}&speed=${speed}`)
+        console.log(res)
+      }
+      catch (e) { console.error(e) }
+    }
   }
 
   const [speed, setSpeed] = React.useState<string>("");
