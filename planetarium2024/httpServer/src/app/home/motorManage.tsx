@@ -1,4 +1,4 @@
-import { TextField, Button, MenuItem, FormGroup} from "@mui/material"
+import { TextField, Button, MenuItem, FormGroup, ToggleButton, ToggleButtonGroup} from "@mui/material"
 import axios from "axios"
 import React from "react"
 
@@ -23,6 +23,13 @@ export default function MotorManage() {
 
   const [speed, setSpeed] = React.useState<string>("");
 
+  const handleChange = (
+    event: React.MouseEvent<HTMLElement>,
+    value: string
+  ) => {
+    setSpeed(value);
+  };
+
   return (
     <form action={onSubmit}>
       <FormGroup sx={{ m: 1, p: 1, border: '3px solid grey', maxWidth: 320 }}>
@@ -33,18 +40,17 @@ export default function MotorManage() {
           type="number"
           required
         />
-        <TextField
-          sx={{ m: 1, width: 120, minWidth: 120 }}
+        <ToggleButtonGroup
+          sx={{ m: 1 }}
+          color="primary"
+          exclusive
           value={speed}
-          onChange={e => setSpeed(e.target.value)}
-          select
-          label="スピード"
-          required
+          onChange={handleChange}
         >
-          <MenuItem value="low"> 低 </MenuItem>
-          <MenuItem value="medium"> 中 </MenuItem>
-          <MenuItem value="high"> 高 </MenuItem>
-        </TextField>
+          <ToggleButton value="low">低速</ToggleButton>
+          <ToggleButton value="medium">中速</ToggleButton>
+          <ToggleButton value="high">高速</ToggleButton>
+        </ToggleButtonGroup>
         <Button
           variant="contained"
           type="submit"
