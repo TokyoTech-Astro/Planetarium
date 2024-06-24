@@ -1,4 +1,4 @@
-import { Box, ButtonGroup, Button } from '@mui/material'
+import { ButtonGroup, Button, Paper, Typography } from '@mui/material'
 import StopButton from '@/app/home/stopButton'
 import axios from 'axios'
 
@@ -12,11 +12,12 @@ export default function AutoModeManage() {
   }
 
   return (
-    <Box sx={{ m: 1, p: 1, border: '3px solid grey', maxWidth: 320 }}>
-        <ButtonGroup>
-          <Button variant="contained" onClick={onClick}>上映開始</Button>
-          <StopButton />
-        </ButtonGroup>
-    </Box>
+    <Paper sx={{ maxWidth: 400, m: 1, p: 1}}>
+      <Typography sx={{ m: 1 }} variant="h6" color="primary" gutterBottom>上映</Typography>
+      <ButtonGroup sx={{ m: 1 }}>
+        <Button variant="contained" onClick={onClick}>上映開始</Button>
+        <StopButton />
+      </ButtonGroup>
+    </Paper>
   )
 }
