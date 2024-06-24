@@ -21,7 +21,7 @@ def rotation(response:Response, query:str, dir:str="", deg:int=0, speed:str=""):
     if query == "start":
         global _proc, _dir, _deg, _speed
         try:
-            _proc.kill()
+            _proc.terminate()
         except:
             pass
         _proc = subprocess.Popen(["python", "rotate.py", dir, str(deg), speed])
@@ -33,9 +33,12 @@ def rotation(response:Response, query:str, dir:str="", deg:int=0, speed:str=""):
     
     elif query == "stop":
         try:
-            _proc.kill()
-            print('Stop rotation')
-            return Response('Stop rotation')
+            if _proc.poll() == None:
+                _proc.terminate()
+                print('Stop rotation.')
+                return Response('Stop rotation.')
+            else:
+                return Response('Not rotating.')
         except:
             return Response('Not rotating.')
 

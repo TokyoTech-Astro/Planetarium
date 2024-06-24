@@ -41,7 +41,6 @@ def rotate(dir:str, deg:int, speed:str):
             pins[2].off()
             pins[3].on()
             time.sleep(sleepTime)
-        return
             
     elif dir == "back":
         for _ in range(5*deg):
@@ -65,10 +64,6 @@ def rotate(dir:str, deg:int, speed:str):
             pins[2].on()
             pins[3].off()
             time.sleep(sleepTime)
-        return
-
-    else:
-        return
     
 if __name__ == "__main__":
     dir = sys.argv[1]

@@ -1,4 +1,4 @@
-import { TextField, Button, MenuItem, FormGroup, ToggleButton, ToggleButtonGroup} from "@mui/material"
+import { TextField, Button, ButtonGroup, FormGroup, ToggleButton, ToggleButtonGroup} from "@mui/material"
 import axios from "axios"
 import React from "react"
 
@@ -30,6 +30,14 @@ export default function MotorManage() {
     setSpeed(value);
   };
 
+  const handleStop = async () => {
+    try {
+      const res = await axios.post('http://pi-controller.local:8000/motor?query=stop')
+      console.log(res)
+    }
+    catch (e) { console.error(e) }
+  }
+
   return (
     <form action={onSubmit}>
       <FormGroup sx={{ m: 1, p: 1, border: '3px solid grey', maxWidth: 320 }}>
@@ -51,13 +59,21 @@ export default function MotorManage() {
           <ToggleButton value="medium">中速</ToggleButton>
           <ToggleButton value="high">高速</ToggleButton>
         </ToggleButtonGroup>
-        <Button
-          variant="contained"
-          type="submit"
-          sx={{ m: 1, maxWidth: 80 }}
-        >
-          実行
-        </Button>
+        <ButtonGroup sx={{ m: 1 }}>
+          <Button
+            variant="contained"
+            type="submit"
+          >
+            回転
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleStop}
+          >
+            停止
+          </Button>
+        </ButtonGroup>
       </FormGroup>
     </form>
   )
