@@ -18,10 +18,6 @@ _speed:str
 
 @app.post("/motor")
 def rotation(response:Response, query:str, dir:str="", deg:int=0, speed:str=""):
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = '*'
-    response.headers['Access-Control-Allow-Headers'] = '*'
-
     if query == "start":
         global _proc, _dir, _deg, _speed
         try:
@@ -45,10 +41,3 @@ def rotation(response:Response, query:str, dir:str="", deg:int=0, speed:str=""):
 
     else:
         pass
-
-@app.options("/motor")
-def opt(response:Response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = '*'
-    response.headers['Access-Control-Allow-Headers'] = '*'
-    return Response()

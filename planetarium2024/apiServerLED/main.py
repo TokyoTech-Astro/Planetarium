@@ -21,10 +21,6 @@ app.add_middleware(
 
 @app.put("/led/{pin}")
 def write(response:Response, pin:int, state:bool):
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = '*'
-    response.headers['Access-Control-Allow-Headers'] = '*'
-
     global leds, fjson
     for led in fjson:
         if int(led['pin']) == pin:
@@ -40,18 +36,7 @@ def write(response:Response, pin:int, state:bool):
 
 @app.get("/led/{pin}")
 def state(response:Response, pin:int):
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = '*'
-    response.headers['Access-Control-Allow-Headers'] = '*'
-
     global leds, fjson
     for led in fjson:
         if int(led['pin']) == pin:
             return {"type": "led", "pin": pin, "name": led['name'], "state": leds[pin].value}
-        
-@app.options("/audio/{pin}")
-def opt(response:Response):
-    response.headers['Access-Control-Allow-Origin'] = '*'
-    response.headers['Access-Control-Allow-Methods'] = '*'
-    response.headers['Access-Control-Allow-Headers'] = '*'
-    return Response()
