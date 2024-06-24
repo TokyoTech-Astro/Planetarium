@@ -4,13 +4,9 @@ import subprocess
 
 app = FastAPI()
 
-origins = [
-    "*"
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"]
 )
@@ -21,7 +17,11 @@ _deg:int
 _speed:str
 
 @app.post("/motor")
-def rotation(query:str, dir:str="", deg:int=0, speed:str=""):
+def rotation(response:Response, query:str, dir:str="", deg:int=0, speed:str=""):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = '*'
+
     if query == "start":
         global _proc, _dir, _deg, _speed
         try:
@@ -45,3 +45,10 @@ def rotation(query:str, dir:str="", deg:int=0, speed:str=""):
 
     else:
         pass
+
+@app.options("/motor")
+def opt(response:Response):
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = '*'
+    return Response()
