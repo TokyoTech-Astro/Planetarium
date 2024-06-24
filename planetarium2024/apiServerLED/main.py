@@ -26,11 +26,11 @@ def write(response:Response, pin:int, state:bool):
         if int(led['pin']) == pin:
             if state:
                 leds[pin].on()
-                print(f'Turn on {led['name']}(pin{pin}).')
+                print(f"Turn on {led['name']}(pin{pin}).")
                 return Response(f"Turn on {led['name']}(pin{pin}).")
             else:
                 leds[pin].off()
-                print(f'Turn off {led['name']}(pin{pin}).')
+                print(f"Turn off {led['name']}(pin{pin}).")
                 return Response(f"Turn off {led['name']}(pin{pin}).")
 
 
