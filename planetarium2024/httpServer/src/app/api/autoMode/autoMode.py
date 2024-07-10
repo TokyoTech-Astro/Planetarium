@@ -57,9 +57,9 @@ def postMotor(query:str, dir:str="", deg:int=0, speed:str=""):
 
 def handleMotor(deg:int):
     if deg > 0:
-        postMotor("start", "forward", deg, "medium")
+        postMotor("start", "forward", deg, "high")
     else:
-        postMotor("start", "back", -deg, "medium")
+        postMotor("start", "back", -deg, "high")
 
 def postAudio(filename:str):
     try:
