@@ -15,12 +15,12 @@ def rotate(dir:str, deg:int, speed:str):
     elif speed == "medium":
         sleepTime = 0.006
     elif speed == "high":
-        sleepTime = 0.003
+        sleepTime = 0.0045
     else:
         return
             
     if dir == "forward":
-        for _ in range(deg*5):
+        for _ in range(deg*15):
             pins[0].on()
             pins[1].on()
             pins[2].off()
@@ -43,7 +43,7 @@ def rotate(dir:str, deg:int, speed:str):
             time.sleep(sleepTime)
             
     elif dir == "back":
-        for _ in range(5*deg):
+        for _ in range(15*deg):
             pins[0].on()
             pins[1].on()
             pins[2].off()
