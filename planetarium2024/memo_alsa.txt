@@ -1,0 +1,15 @@
+~/.asoundrc
+/etc/asound.conf
+
+bluealsa-aplay -L
+aplay -D bluealsa:DEV=XX:XX:XX:XX:XX:XX
+
+audioをdaemon化するとエラー吐く原因 https://qiita.com/coboco/items/d49971e46e5e04a7f2b0
+
+systemdを理解するのに便利 https://qiita.com/ledmonster/items/5f2e1633d4124cb978fe
+sudo systemctl list-dependencies
+/etc/systemd/system/
+/lib/systemd/system/
+systemctl [--user] enable
+journalctl [--user] -u <unitname>
+systemd-analyze plot > unitstart.html
