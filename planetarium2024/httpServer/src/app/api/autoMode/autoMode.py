@@ -33,7 +33,7 @@ reset   = '\u001b[0m'
 
 def putLed(pin:int, state:bool):
     try:
-        res = requests.put(f'http://pi-starsphere.local:8000/led/{pin}?state={state}')
+        res = requests.put(f'http://raspberry.local:8002/led/{pin}?state={state}')
         print(f'{yellow}■{reset} Set LED state. (pin:{pin}, state:{state}).')
     except:
         pass
@@ -47,7 +47,7 @@ def handleLed(pins:list[int]):
 
 def postMotor(query:str, dir:str="", deg:int=0, speed:str=""):
     try:
-        res = requests.post(f'http://pi-controller.local:8000/motor?query={query}&dir={dir}&deg={deg}&speed={speed}')
+        res = requests.post(f'http://raspberry.local:8000/motor?query={query}&dir={dir}&deg={deg}&speed={speed}')
         if query == "start":
             print(f'{green}■{reset} Start rotation. (dir:{dir}, deg:{deg}, speed:{speed})')
         elif query == "stop":
@@ -63,7 +63,7 @@ def handleMotor(deg:int):
 
 def postAudio(filename:str):
     try:
-        res = requests.post(f'http://pi-controller.local:8001/audio?filename={filename}')
+        res = requests.post(f'http://raspberry.local:8001/audio?filename={filename}')
         print(f'{blue}■{reset} Playing {filename}.')
     except:
         pass
