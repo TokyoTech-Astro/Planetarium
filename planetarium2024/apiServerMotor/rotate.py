@@ -3,67 +3,35 @@ import time
 import sys
 
 def rotate(dir:str, deg:int, speed:str):
-    pins = [
-        DigitalOutputDevice(21),
-        DigitalOutputDevice(12),
-        DigitalOutputDevice(8),
-        DigitalOutputDevice(23)
-    ]
+    clk = DigitalOutputDevice(15)
+    cw_ccw = DigitalOutputDevice(18)
+    sleep_ref = DigitalOutputDevice(23)
+    vdd = DigitalOutputDevice(24)
 
-    if speed == "low":
-        sleepTime = 0.012
-    elif speed == "medium":
-        sleepTime = 0.006
-    elif speed == "high":
-        sleepTime = 0.0045
+    if dir == "forward":
+        cw_ccw.on()
+    elif dir == "back":
+        cw_ccw.off()
     else:
         return
-            
-    if dir == "forward":
-        for _ in range(deg*15):
-            pins[0].on()
-            pins[1].on()
-            pins[2].off()
-            pins[3].off()
-            time.sleep(sleepTime)
-            pins[0].off()
-            pins[1].on()
-            pins[2].on()
-            pins[3].off()
-            time.sleep(sleepTime)
-            pins[0].off()
-            pins[1].off()
-            pins[2].on()
-            pins[3].on()
-            time.sleep(sleepTime)
-            pins[0].on()
-            pins[1].off()
-            pins[2].off()
-            pins[3].on()
-            time.sleep(sleepTime)
-            
-    elif dir == "back":
-        for _ in range(15*deg):
-            pins[0].on()
-            pins[1].on()
-            pins[2].off()
-            pins[3].off()
-            time.sleep(sleepTime)
-            pins[0].on()
-            pins[1].off()
-            pins[2].off()
-            pins[3].on()
-            time.sleep(sleepTime)
-            pins[0].off()
-            pins[1].off()
-            pins[2].on()
-            pins[3].on()
-            time.sleep(sleepTime)
-            pins[0].off()
-            pins[1].on()
-            pins[2].on()
-            pins[3].off()
-            time.sleep(sleepTime)
+
+    if speed == "low":
+        period = 0.008
+    elif speed == "medium":
+        period = 0.005
+    elif speed == "high":
+        period = 0.003
+    else:
+        return
+    
+    sleep_ref.on()
+    vdd.on()
+    
+    for _ in range(deg*60):
+        clk.on()
+        time.sleep(period/2)
+        clk.off()
+        time.sleep(period/2)
     
 if __name__ == "__main__":
     dir = sys.argv[1]
