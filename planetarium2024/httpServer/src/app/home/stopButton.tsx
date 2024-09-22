@@ -15,7 +15,7 @@ export default function StopButton() {
 
     const handleStop = async () => {
       try {
-        const res = await axios.post('http://pi-controller.local:3000/api/autoMode?query=stop')
+        const res = await axios.post('http://raspberry.local:3000/api/autoMode?query=stop')
         console.log(res)
       }
       catch (e) { console.error(e) }
