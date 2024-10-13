@@ -1,1 +1,5 @@
-__pycache__
+*backup*
+*.kicad_prl
+*cache*
+*gerber
+*.zip

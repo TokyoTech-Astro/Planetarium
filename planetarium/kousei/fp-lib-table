@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "SOD-323HE")(type "KiCad")(uri "${KIPRJMOD}/SOD-323HE.pretty")(options "")(descr ""))
+)
