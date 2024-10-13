@@ -3,3 +3,10 @@
 *cache*
 *gerber
 *.zip
+
+__pycache__
+node_modules
+.next/
+*storybook.log
+next-env.d.ts
+planetarium2024/httpServer/httpServer

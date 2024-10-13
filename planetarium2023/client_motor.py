@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import socket
 import time
 import RPi.GPIO as GPIO
@@ -14,10 +15,10 @@ Port = 50007
 Destination = "pi-starsphere.local"
 stepping = 0
 continuing = True
-allstarsPin = [2,3,5,6,7,8,9,11,12,13,16,21]
-allstarsName = ["一等星","恒星","おうし","おおいぬ","やぎ","しし","エリダヌス","かに","ぎょしゃ","ふたご","こいぬ","オリオン"]
-starpicturesPin = [5,6,7,8,9,11,12,13,16,21]
-starpicturesName = ["おうし","おおいぬ","やぎ","しし","エリダヌス","かに","ぎょしゃ","ふたご","こいぬ","オリオン"]
+allstarsPin = [14,4,9,11,5,19,26,21,13]
+allstarsName = ["一等星","恒星","さそり","ペガサス","おおいぬ","こぐま","オリオン","いて","こいぬ"]
+starpicturesPin = [9,11,5,19,26,21,13]
+starpicturesName = ["さそり","ペガサス","おおいぬ","こぐま","オリオン","いて","こいぬ"]
 
 
 

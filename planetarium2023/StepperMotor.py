@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import time
 import RPi.GPIO as GPIO
 from gpio_maintaner import GPIOMaintainer
@@ -9,7 +10,7 @@ L = GPIO.LOW
 # 4, 17, 27, 22
 
 class StepperMotor:
-    def __init__(self, t, p1=21, p2=16, p3=12, p4=7):
+    def __init__(self, t, p1=21, p2=12, p3=8, p4=23):
         self.pin = [p1, p2, p3, p4]
         self.t = t
 
@@ -92,8 +93,22 @@ class StepperMotor:
         self.off()
 
 
+#if __name__ == "__main__":
+#    with GPIOMaintainer():
+#        with StepperMotor(0.005) as sm:
+#            sm.rRotate(2700)
+#        print("rot end")
+
 if __name__ == "__main__":
+    dire = raw_input("input direction f or r:")
+    rot = raw_input("input rotation amount:")
     with GPIOMaintainer():
-        with StepperMotor(0.004) as sm:
-            sm.rRotate(10)
-        print("rot end")
+        with StepperMotor(0.006) as sm:
+            if dire=='f':
+                sm.fRotate(int(rot))
+                print("rot end")
+            if dire=='r':
+                sm.rRotate(int(rot))
+                print("rot end")
+
+

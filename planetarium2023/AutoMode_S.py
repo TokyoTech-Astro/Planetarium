@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import time
 import RPi.GPIO as GPIO
 from switch import GPIOswitch

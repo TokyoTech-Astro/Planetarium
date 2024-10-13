@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from threading import Thread
 import threading
 import time
@@ -41,12 +42,12 @@ class StepperService(Thread):
 #daylight
 #stepper moter
 
-allstarsPin = [2,3,5,6,7,8,9,11,12,13,16,21]
-allstarsName = ["一等星","恒星","おうし","おおいぬ","やぎ","しし","エリダヌス","かに","ぎょしゃ","ふたご","こいぬ","オリオン"]
+allstarsPin = [14,4,9,11,5,13,19,26,25,8,7,12,20,21]
+allstarsName = ["一等星","恒星","さそり","ペガサス","おおいぬ","こいぬ","こぐま","オリオン","none","none","none","none","none","いて"]
 
 def Automode_C(js,sc,dl):
     print("AutoMode_C")
-    with StepperMotor(0.04) as smFront:
+    with StepperMotor(0.005) as smFront:
         switchCount = 0
         motorCount = 0
         global stepping
@@ -87,13 +88,14 @@ def Automode_C(js,sc,dl):
 
     time.sleep(1)
 
-    with StepperMotor(0.04) as smRear:
+    with StepperMotor(0.005) as smRear:
         StepperService(smRear).start()
         stepping += -motorCount
         sc.senddata("star")
         print("Turn off the all StarPins")
         for pin in allstarsPin:
             sc.senddata(str(-pin))
+            sc.senddata(str(4))
             time.sleep(0.06)
         sc.senddata("exit")
         while True:
