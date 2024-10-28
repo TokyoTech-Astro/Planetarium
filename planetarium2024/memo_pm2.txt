@@ -4,3 +4,7 @@ pm2 start npm --name planetariumHttpServer -- start
 pm2 save
 
 pm2 logs
+
+ページの変更を反映したいとき
+npm run build
+pm2 restart planetariumHttpServer

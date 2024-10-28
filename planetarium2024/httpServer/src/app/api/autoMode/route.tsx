@@ -14,8 +14,10 @@ export async function  POST(request: NextRequest) {
     const query = searchParams.get('query')
     if(query == 'start'){
         if(child !== undefined && child.exitCode === null){
+            console.log('Auto mode is already running.')
             return new Response("Auto mode is already running.", {headers: corsHeaders})
         }
+        console.log('Run auto mode.')
         child = execFile('./src/app/api/autoMode/autoMode.py')
         return new Response("Auto mode started.", {headers: corsHeaders})
     }
@@ -23,9 +25,13 @@ export async function  POST(request: NextRequest) {
     else if(query == 'stop'){
         if(child !== undefined && child.exitCode === null) {
             child.kill()
+            console.log('stop auto mode')
             return new Response("stop", {headers: corsHeaders})
         }
-        else return new Response("Auto mode is not started yet", {headers: corsHeaders})
+        else {
+            console.log('Auto mode is not started yet/')
+            return new Response("Auto mode is not started yet", {headers: corsHeaders})
+        }
     }
 }
 

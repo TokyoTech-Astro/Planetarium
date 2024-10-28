@@ -4,6 +4,18 @@ import json
 import requests
 import time
 import signal
+import os
+from os.path import join
+from dotenv import load_dotenv
+
+dotenv_path = join('./', '.env')
+load_dotenv()
+SERVER_LED = os.getenv('NEXT_PUBLIC_SERVER_LED')
+SERVER_LED_PORT = os.getenv('NEXT_PUBLIC_SERVER_LED_PORT')
+SERVER_MOTOR = os.getenv('NEXT_PUBLIC_SERVER_MOTOR')
+SERVER_MOTOR_PORT = os.getenv('NEXT_PUBLIC_SERVER_MOTOR_PORT')
+SERVER_AUDIO = os.getenv('NEXT_PUBLIC_SERVER_AUDIO')
+SERVER_AUDIO_PORT = os.getenv('NEXT_PUBLIC_SERVER_AUDIO_PORT')
 
 with open('src/k2023.json') as f:
     k2023 = json.load(f)
@@ -32,8 +44,9 @@ white   = '\u001b[37m'
 reset   = '\u001b[0m'
 
 def putLed(pin:int, state:bool):
+    print(f'http://{SERVER_LED}:{SERVER_LED_PORT}/led/{pin}?state={state}')
     try:
-        res = requests.put(f'http://raspberry.local:8002/led/{pin}?state={state}')
+        res = requests.put(f'http://{SERVER_LED}:{SERVER_LED_PORT}/led/{pin}?state={state}')
         print(f'{yellow}■{reset} Set LED state. (pin:{pin}, state:{state}).')
     except:
         pass
@@ -47,7 +60,7 @@ def handleLed(pins:list[int]):
 
 def postMotor(query:str, dir:str="", deg:int=0, speed:str=""):
     try:
-        res = requests.post(f'http://raspberry.local:8000/motor?query={query}&dir={dir}&deg={deg}&speed={speed}')
+        res = requests.post(f'http://{SERVER_MOTOR}:{SERVER_MOTOR_PORT}/motor?query={query}&dir={dir}&deg={deg}&speed={speed}')
         if query == "start":
             print(f'{green}■{reset} Start rotation. (dir:{dir}, deg:{deg}, speed:{speed})')
         elif query == "stop":
@@ -63,7 +76,7 @@ def handleMotor(deg:int):
 
 def postAudio(filename:str):
     try:
-        res = requests.post(f'http://raspberry.local:8001/audio?filename={filename}')
+        res = requests.post(f'http://{SERVER_AUDIO}:{SERVER_AUDIO_PORT}/audio?filename={filename}')
         print(f'{blue}■{reset} Playing {filename}.')
     except:
         pass

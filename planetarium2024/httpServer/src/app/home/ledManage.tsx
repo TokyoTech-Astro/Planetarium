@@ -13,7 +13,8 @@ export default function LEDList() {
               <Button onClick={
                 async () => {
                   try {
-                    const res = await axios.put(`http://pi-starsphere.local:8000/led/${led.pin}?state=True`)
+                    console.log(`http://${process.env.NEXT_PUBLIC_SERVER_LED}:${process.env.NEXT_PUBLIC_SERVER_LED_PORT}/led/${led.pin}?state=True`)
+                    const res = await axios.put(`http://${process.env.NEXT_PUBLIC_SERVER_LED}:${process.env.NEXT_PUBLIC_SERVER_LED_PORT}/led/${led.pin}?state=True`)
                     console.log(res)
                   }
                   catch (e) { console.error(e) }
@@ -22,7 +23,7 @@ export default function LEDList() {
               <Button onClick={
                 async () => {
                   try {
-                    const res = await axios.put(`http://pi-starsphere.local:8000/led/${led.pin}?state=False`)
+                    const res = await axios.put(`http://${process.env.NEXT_PUBLIC_SERVER_LED}:${process.env.NEXT_PUBLIC_SERVER_LED_PORT}/led/${led.pin}?state=False`)
                     console.log(res)
                   }
                   catch (e) { console.error(e) }

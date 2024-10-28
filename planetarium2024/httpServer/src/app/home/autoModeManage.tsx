@@ -5,7 +5,7 @@ import axios from 'axios'
 export default function AutoModeManage() {
   const onClick = async () => {
     try {
-      const res = await axios.post('http://raspberry.local:3000/api/autoMode?query=start')
+      const res = await axios.post(`http://${process.env.NEXT_PUBLIC_SERVER_HTTP}:${process.env.NEXT_PUBLIC_SERVER_HTTP_PORT}/api/autoMode?query=start`)
       console.log(res)
     }
     catch (e) { console.error(e) }
