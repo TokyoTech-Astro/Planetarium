@@ -1,0 +1,14 @@
+[Unit]
+Description=Motor API Server
+After=multi-user.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/pi/Planetarium/planetarium2024/apiServerMotor
+ExecStart=sh launch.sh
+Restart=always
+User=pi
+Group=pi
+
+[Install]
+WantedBy=multi-user.target
