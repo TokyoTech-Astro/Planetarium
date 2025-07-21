@@ -10,3 +10,4 @@ node_modules
 *storybook.log
 next-env.d.ts
 planetarium2024/httpServer/httpServer
+_*.wav
