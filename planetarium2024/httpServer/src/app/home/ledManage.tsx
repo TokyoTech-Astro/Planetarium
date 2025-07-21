@@ -2,6 +2,14 @@ import { FormGroup, ButtonGroup, Button, Box, Paper, Typography } from "@mui/mat
 import axios from 'axios'
 import leds from '@/leds.json'
 
+const pinToNameMap = new Map<string, string>();
+const nameToPinMap = new Map<string, string>();
+
+leds.forEach(item => {
+  pinToNameMap.set(item.pin.toString(), item.name);
+  nameToPinMap.set(item.name, item.pin.toString());
+});
+
 export default function LEDList() {
   return (
     <Paper sx={{ maxWidth: 400, m: 1, p: 1}}>
@@ -13,14 +21,14 @@ export default function LEDList() {
               <Button onClick={
                 async () => {
                   try {
-                    if(led.pin != 4) {
+                    if(led.pin.toString() != nameToPinMap.get('恒星')) {
                       console.log(`http://${process.env.NEXT_PUBLIC_SERVER_LED}:${process.env.NEXT_PUBLIC_SERVER_LED_PORT}/led/${led.pin}?state=True`)
                       const res = await axios.put(`http://${process.env.NEXT_PUBLIC_SERVER_LED}:${process.env.NEXT_PUBLIC_SERVER_LED_PORT}/led/${led.pin}?state=True`)
                       console.log(res)
                     }
-                    else if(led.pin == 4) {
-                      console.log(`http://pi-controller.local:8002/led/${led.pin}?state=True`)
-                      const res = await axios.put(`http://pi-controller.local:8002/led/${led.pin}?state=True`)
+                    else if(led.pin.toString() == nameToPinMap.get('恒星')) {
+                      console.log(`http://${process.env.NEXT_PUBLIC_SERVER_LED_KOSEI}:${process.env.NEXT_PUBLIC_SERVER_LED_KOSEI_PORT}/led/${led.pin}?state=True`)
+                      const res = await axios.put(`http://${process.env.NEXT_PUBLIC_SERVER_LED_KOSEI}:${process.env.NEXT_PUBLIC_SERVER_LED_KOSEI_PORT}/led/${led.pin}?state=True`)
                       console.log(res)
                     }
                   }
@@ -30,14 +38,14 @@ export default function LEDList() {
               <Button onClick={
                 async () => {
                   try {
-                    if(led.pin != 4){
+                    if(led.pin.toString() != nameToPinMap.get('恒星')){
                       console.log(`http://${process.env.NEXT_PUBLIC_SERVER_LED}:${process.env.NEXT_PUBLIC_SERVER_LED_PORT}/led/${led.pin}?state=Off`)
                       const res = await axios.put(`http://${process.env.NEXT_PUBLIC_SERVER_LED}:${process.env.NEXT_PUBLIC_SERVER_LED_PORT}/led/${led.pin}?state=False`)
                       console.log(res)
                     }
-                    else if(led.pin == 4){
-                      console.log(`http://pi-controller.local:8002/led/${led.pin}?state=False`)
-                      const res = await axios.put(`http://pi-controller.local:8002/led/${led.pin}?state=False`)
+                    else if(led.pin.toString() == nameToPinMap.get('恒星')){
+                      console.log(`http://${process.env.NEXT_PUBLIC_SERVER_LED_KOSEI}:${process.env.NEXT_PUBLIC_SERVER_LED_KOSEI_PORT}/led/${led.pin}?state=False`)
+                      const res = await axios.put(`http://${process.env.NEXT_PUBLIC_SERVER_LED_KOSEI}:${process.env.NEXT_PUBLIC_SERVER_LED_KOSEI_PORT}/led/${led.pin}?state=False`)
                       console.log(res)
                     }
                   }

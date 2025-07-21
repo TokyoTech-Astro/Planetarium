@@ -5,10 +5,10 @@ import sys
 n_divided = 1
 
 def rotate(dir:str, deg:int, speed:str):
-    clk = DigitalOutputDevice(15)
-    cw_ccw = DigitalOutputDevice(18)
-    sleep_ref = DigitalOutputDevice(23)
-    vdd = DigitalOutputDevice(24)
+    clk = DigitalOutputDevice(22)
+    cw_ccw = DigitalOutputDevice(27)
+    sleep_ref = DigitalOutputDevice(17)
+    vdd = DigitalOutputDevice(4)
 
     if dir == "forward":
         cw_ccw.on()

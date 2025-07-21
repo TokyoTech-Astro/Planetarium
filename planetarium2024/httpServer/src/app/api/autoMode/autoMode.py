@@ -43,10 +43,13 @@ cyan    = '\u001b[36m'
 white   = '\u001b[37m'
 reset   = '\u001b[0m'
 
+name2pin = {led['name']: led['pin'] for led in leds}
+pin2name = {led['pin']: led['name'] for led in leds}
+
 def putLed(pin:int, state:bool):
     print(f'http://{SERVER_LED}:{SERVER_LED_PORT}/led/{pin}?state={state}')
     try:
-        if int(pin) != 4:
+        if int(pin) != name2pin['恒星']:
             res = requests.put(f'http://{SERVER_LED}:{SERVER_LED_PORT}/led/{pin}?state={state}')
             print(f'{yellow}■{reset} Set LED state. (pin:{pin}, state:{state}).')
         else:
