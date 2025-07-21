@@ -4,7 +4,7 @@
 	},
 	{
 		"audio":"1dounyu.wav",
-		"star":[4,14],
+		"star":[4,14,8,25],
 		"interval":34
 	},
 	{
@@ -21,7 +21,7 @@
 		"interval":3
 	},
 	{
-		"motor":270,
+		"motor":90,
 		"audio":"4huyu.wav",
 		"interval":37
 	},
@@ -39,7 +39,7 @@
 	},
 	{
 		"star":[-5,-13,-26],
-		"motor":-540,
+		"motor":-180,
 		"audio":"5natu1.wav",
 		"interval":51
 	},
@@ -62,13 +62,16 @@
 	{
 		"star":[-9,-21],
 		"audio":"8owari.wav",
-		"interval":41
+		"interval":36
 	},
 	{
 		"interval":120
 	},
 	{
-		"motor":270
+		"motor":90
+	},
+	{
+		"star":[-8,-25]
 	},
 	{
 		"interval":"allLedOff"

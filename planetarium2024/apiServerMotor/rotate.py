@@ -2,6 +2,8 @@ from gpiozero import DigitalOutputDevice
 import time
 import sys
 
+n_divided = 1
+
 def rotate(dir:str, deg:int, speed:str):
     clk = DigitalOutputDevice(15)
     cw_ccw = DigitalOutputDevice(18)
@@ -16,18 +18,18 @@ def rotate(dir:str, deg:int, speed:str):
         return
 
     if speed == "low":
-        period = 0.008
+        period = 0.016 / n_divided
     elif speed == "medium":
-        period = 0.005
+        period = 0.010 / n_divided
     elif speed == "high":
-        period = 0.003
+        period = 0.006 / n_divided
     else:
         return
     
     sleep_ref.on()
     vdd.on()
     
-    for _ in range(deg*60):
+    for _ in range(deg*60*n_divided):
         clk.on()
         time.sleep(period/2)
         clk.off()

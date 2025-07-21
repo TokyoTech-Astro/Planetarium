@@ -13,9 +13,16 @@ export default function LEDList() {
               <Button onClick={
                 async () => {
                   try {
-                    console.log(`http://${process.env.NEXT_PUBLIC_SERVER_LED}:${process.env.NEXT_PUBLIC_SERVER_LED_PORT}/led/${led.pin}?state=True`)
-                    const res = await axios.put(`http://${process.env.NEXT_PUBLIC_SERVER_LED}:${process.env.NEXT_PUBLIC_SERVER_LED_PORT}/led/${led.pin}?state=True`)
-                    console.log(res)
+                    if(led.pin != 4) {
+                      console.log(`http://${process.env.NEXT_PUBLIC_SERVER_LED}:${process.env.NEXT_PUBLIC_SERVER_LED_PORT}/led/${led.pin}?state=True`)
+                      const res = await axios.put(`http://${process.env.NEXT_PUBLIC_SERVER_LED}:${process.env.NEXT_PUBLIC_SERVER_LED_PORT}/led/${led.pin}?state=True`)
+                      console.log(res)
+                    }
+                    else if(led.pin == 4) {
+                      console.log(`http://pi-controller.local:8002/led/${led.pin}?state=True`)
+                      const res = await axios.put(`http://pi-controller.local:8002/led/${led.pin}?state=True`)
+                      console.log(res)
+                    }
                   }
                   catch (e) { console.error(e) }
                 }
@@ -23,8 +30,16 @@ export default function LEDList() {
               <Button onClick={
                 async () => {
                   try {
-                    const res = await axios.put(`http://${process.env.NEXT_PUBLIC_SERVER_LED}:${process.env.NEXT_PUBLIC_SERVER_LED_PORT}/led/${led.pin}?state=False`)
-                    console.log(res)
+                    if(led.pin != 4){
+                      console.log(`http://${process.env.NEXT_PUBLIC_SERVER_LED}:${process.env.NEXT_PUBLIC_SERVER_LED_PORT}/led/${led.pin}?state=Off`)
+                      const res = await axios.put(`http://${process.env.NEXT_PUBLIC_SERVER_LED}:${process.env.NEXT_PUBLIC_SERVER_LED_PORT}/led/${led.pin}?state=False`)
+                      console.log(res)
+                    }
+                    else if(led.pin == 4){
+                      console.log(`http://pi-controller.local:8002/led/${led.pin}?state=False`)
+                      const res = await axios.put(`http://pi-controller.local:8002/led/${led.pin}?state=False`)
+                      console.log(res)
+                    }
                   }
                   catch (e) { console.error(e) }
                 }

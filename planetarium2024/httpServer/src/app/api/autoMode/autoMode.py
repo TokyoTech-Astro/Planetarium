@@ -46,8 +46,12 @@ reset   = '\u001b[0m'
 def putLed(pin:int, state:bool):
     print(f'http://{SERVER_LED}:{SERVER_LED_PORT}/led/{pin}?state={state}')
     try:
-        res = requests.put(f'http://{SERVER_LED}:{SERVER_LED_PORT}/led/{pin}?state={state}')
-        print(f'{yellow}■{reset} Set LED state. (pin:{pin}, state:{state}).')
+        if int(pin) != 4:
+            res = requests.put(f'http://{SERVER_LED}:{SERVER_LED_PORT}/led/{pin}?state={state}')
+            print(f'{yellow}■{reset} Set LED state. (pin:{pin}, state:{state}).')
+        else:
+            res = requests.put(f'http://pi-controller.local:8002/led/{pin}?state={state}')
+            print(f'{yellow}■{reset} Set LED state. (pin:{pin}, state:{state}).')
     except:
         pass
 
