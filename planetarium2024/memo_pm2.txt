@@ -1,8 +1,12 @@
+pm2: web(http)サーバーの自動起動をするソフト
+
+自動起動設定
 pm2 startup
 sudo env PATH=$PATH:/home/pi/.nvm/versions/node/v20.14.0/bin /home/pi/.nvm/versions/node/v20.14.0/lib/node_modules/pm2/bin/pm2 startup systemd -u pi --hp /home/pi
 pm2 start npm --name planetariumHttpServer -- start
 pm2 save
 
+ログ確認
 pm2 logs
 
 ページの変更を反映したいとき

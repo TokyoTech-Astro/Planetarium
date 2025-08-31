@@ -13,6 +13,7 @@ systemdを理解するのに便利 https://qiita.com/ledmonster/items/5f2e1633d4
 sudo systemctl list-dependencies
 /etc/systemd/system/
 /lib/systemd/system/
+~/.local/share/systemd/user/
 systemctl [--user] enable
 journalctl [--user] -u <unitname>
 systemd-analyze plot > unitstart.html

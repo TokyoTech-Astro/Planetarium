@@ -1,0 +1,15 @@
+参考サイト
+https://zenn.dev/ishikawa096/articles/f4270ce9439cef
+
+現在のWi-Fi設定を確認
+nmcli connection show
+
+接続可能なWi-Fiアクセスポイントを確認
+sudo nmcli device wifi rescan
+nmcli device wifi list
+
+追加した設定を確認
+nmcli connection show
+
+優先度の確認など
+nmcli -f NAME,TYPE,DEVICE,AUTOCONNECT,AUTOCONNECT-PRIORITY c
