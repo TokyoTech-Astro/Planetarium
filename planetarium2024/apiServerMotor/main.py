@@ -14,11 +14,11 @@ app.add_middleware(
 motor = Motor()
 
 @app.post("/motor")
-def rotation(response:Response, query:str, dir:str="", deg:int=0, speed:str=""):
+def rotation(response:Response, query:str, dir:str = None, deg:int = None, time:float = None):
     if query == "start":
-        motor.rotate(dir,deg,speed)
-        print(f'Start rotation. (direction={motor.dir}, degree={motor.deg}, speed={motor.speed})')
-        return Response(f'Start rotation. (direction={motor.dir}, degree={motor.deg}, speed={motor.speed})')
+        motor.rotate(dir,deg,time)
+        print(f'Start rotation. (direction={motor.dir}, degree={motor.deg}, time={motor.time})')
+        return Response(f'Start rotation. (direction={motor.dir}, degree={motor.deg}, time={motor.time})')
     
     elif query == "stop":
         if motor.proc.returncode == None:

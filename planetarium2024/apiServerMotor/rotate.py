@@ -4,7 +4,7 @@ import sys
 
 n_divided = 1
 
-def rotate(dir:str, deg:int, speed:str):
+def rotate(dir:str, deg:int, rot_time:float):
     clk = DigitalOutputDevice(22)
     cw_ccw = DigitalOutputDevice(27)
     sleep_ref = DigitalOutputDevice(17)
@@ -17,14 +17,7 @@ def rotate(dir:str, deg:int, speed:str):
     else:
         return
 
-    if speed == "low":
-        period = 0.016 / n_divided
-    elif speed == "medium":
-        period = 0.010 / n_divided
-    elif speed == "high":
-        period = 0.006 / n_divided
-    else:
-        return
+    period = rot_time / (60.0 * deg)
     
     sleep_ref.on()
     vdd.on()
@@ -38,5 +31,5 @@ def rotate(dir:str, deg:int, speed:str):
 if __name__ == "__main__":
     dir = sys.argv[1]
     deg = int(float(sys.argv[2]))
-    speed = sys.argv[3]
-    rotate(dir,deg,speed)
+    rot_time = float(sys.argv[3])
+    rotate(dir, deg, rot_time)

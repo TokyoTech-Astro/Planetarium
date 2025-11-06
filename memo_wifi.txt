@@ -8,6 +8,9 @@ nmcli connection show
 sudo nmcli device wifi rescan
 nmcli device wifi list
 
+接続
+sudo nmcli device wifi connect <SSID> password <PASSWORD>
+
 追加した設定を確認
 nmcli connection show
 

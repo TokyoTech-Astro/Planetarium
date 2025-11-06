@@ -1,79 +1,149 @@
 [
 	{
-		"interval":"allLedOff"
+		"interval": "allLedOff"
 	},
 	{
-		"audio":"1dounyu.wav",
-		"star":[4,14,8,25],
-		"interval":34
+		"audio": "1_introduction.wav",
+		"interval": 32
 	},
 	{
-		"audio":"2hokkyokusei1.wav",
-		"interval":51
-	},
-	{	
-		"star":[19],
-		"audio":"3hokkyokusei2.wav",
-		"interval":32
+		"star":[
+			{"pin": 23, "fade_time": 5},
+			{"pin": 24, "fade_time": 5},
+			{"pin": 8,  "fade_time": 5},
+			{"pin": 25,  "fade_time": 5}
+		],
+		"motor":{
+			"degree": 30,
+			"time": 120
+		},
+		"interval": 5
 	},
 	{
-		"star":[-19,11],
+		"audio": "2_northern_1.wav",
+		"interval":64
+	},
+	{
+		"audio":"3_northern_2.wav",
 		"interval":3
 	},
 	{
-		"motor":90,
-		"audio":"4huyu.wav",
-		"interval":37
+		"star":[
+			{"pin": 19, "fade_time": 5}
+		],
+		"interval":45
 	},
 	{
-		"star":[-11,5],
-		"interval":7.5
+		"star":[
+			{"pin": -19, "fade_time": 5},
+			{"pin": 11, "fade_time": 5}
+		],
+		"interval":8
 	},
 	{
-		"star":[13],
-		"interval":39
+		"audio":"4_winter_1.wav",
+		"motor":{
+			"degree": 30,
+			"time": 158
+		},
+		"interval":50
 	},
 	{
-		"star":[26],
-		"interval":14.5
+		"star":[
+			{"pin": -11, "fade_time": 5},
+			{"pin": 5, "fade_time": 5}
+		],
+		"interval":7
 	},
 	{
-		"star":[-5,-13,-26],
-		"motor":-180,
-		"audio":"5natu1.wav",
-		"interval":51
+		"star":[
+			{"pin": 13, "fade_time": 5}
+		],
+		"interval":22
 	},
 	{
-		"audio":"6natu2.wav",
-		"interval":29
+		"audio":"5_winter_2.wav",
+		"interval":6
 	},
 	{
-		"star":[9],
-		"interval":42
+		"star":[
+			{"pin": 26, "fade_time": 5}
+		],
+		"interval":43
 	},
 	{
-		"audio":"7natu3.wav",
-		"interval":9
+		"star":[
+			{"pin": -5, "fade_time": 5},
+			{"pin": -13, "fade_time": 5},
+			{"pin": -26, "fade_time": 5}
+		],
+		"audio":"6_winter_3.wav",
+		"interval":31
 	},
 	{
-		"star":[21],
-		"interval":37
+		"audio":"7_spring.wav",
+		"motor":{
+			"degree": 180,
+			"time": 64
+		},
+		"interval":64
 	},
 	{
-		"star":[-9,-21],
-		"audio":"8owari.wav",
-		"interval":36
+		"audio":"8_summer_1.wav",
+		"motor":{
+			"degree": 30,
+			"time": 221
+		},
+		"interval":115
+	},
+	{
+		"audio":"9_summer_2.wav",
+		"interval":7
+	},
+	{
+		"star":[
+			{"pin": 9, "fade_time": 5}
+		],
+		"interval":72
+	},
+	{
+		"star":[
+			{"pin": 21, "fade_time": 5}
+		],
+		"interval":25
+	},
+	{
+		"audio":"10_closing.wav",
+		"star":[
+			{"pin": -9, "fade_time": 5},
+			{"pin": -21, "fade_time": 5}
+		],
+		"interval":25
 	},
 	{
 		"interval":120
 	},
 	{
-		"motor":90
+		"star":[
+			{"pin": -8, "fade_time": 5},
+			{"pin": -25, "fade_time": 5}
+		],
+		"motor":{
+			"degree": -270,
+			"time": 90
+		}
 	},
 	{
-		"star":[-8,-25]
-	},
-	{
-		"interval":"allLedOff"
+		"star":[
+			{"pin": -23, "fade_time": 5},
+			{"pin": -24, "fade_time": 5},
+			{"pin":  -9, "fade_time": 5},
+			{"pin": -11, "fade_time": 5},
+			{"pin":  -5, "fade_time": 5},
+			{"pin": -13, "fade_time": 5},
+			{"pin": -19, "fade_time": 5},
+			{"pin": -26, "fade_time": 5},
+			{"pin": -21, "fade_time": 5}
+		]
 	}
 ]

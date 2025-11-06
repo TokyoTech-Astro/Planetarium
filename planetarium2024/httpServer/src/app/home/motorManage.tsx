@@ -5,16 +5,29 @@ import React from "react"
 export default function MotorManage() {
   const onSubmit = async (formData: FormData) => {
     const deg: number = Number(formData.get("degree"))
+    let time: number | undefined
+    switch (speed) {
+      case "low":
+        time = 60 * (deg >= 0 ? deg : -deg) * 0.016
+        break;
+      case "medium":
+        time = 60 * (deg >= 0 ? deg : -deg) * 0.010
+        break;
+      case "high":
+        time = 60 * (deg >= 0 ? deg : -deg) * 0.006
+        break;
+    }
+    if(typeof time === undefined) return
     if(deg >= 0) {
       try {
-        const res = await axios.post(`http://${process.env.NEXT_PUBLIC_SERVER_MOTOR}:${process.env.NEXT_PUBLIC_SERVER_MOTOR_PORT}/motor?query=start&dir=forward&deg=${deg}&speed=${speed}`)
+        const res = await axios.post(`http://${process.env.NEXT_PUBLIC_SERVER_MOTOR}:${process.env.NEXT_PUBLIC_SERVER_MOTOR_PORT}/motor?query=start&dir=forward&deg=${deg}&time=${time}`)
         console.log(res)
       }
       catch (e) { console.error(e) }
     }
     else if(deg < 0) {
       try {
-        const res = await axios.post(`http://${process.env.NEXT_PUBLIC_SERVER_MOTOR}:${process.env.NEXT_PUBLIC_SERVER_MOTOR_PORT}/motor?query=start&dir=back&deg=${-deg}&speed=${speed}`)
+        const res = await axios.post(`http://${process.env.NEXT_PUBLIC_SERVER_MOTOR}:${process.env.NEXT_PUBLIC_SERVER_MOTOR_PORT}/motor?query=start&dir=back&deg=${-deg}&time=${time}`)
         console.log(res)
       }
       catch (e) { console.error(e) }

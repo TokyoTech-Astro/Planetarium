@@ -1,5 +1,5 @@
 import { type NextRequest } from "next/server"
-const { execFile } = require('node:child_process')
+const { spawn } = require('node:child_process')
 
 let child: any
 
@@ -18,7 +18,7 @@ export async function  POST(request: NextRequest) {
             return new Response("Auto mode is already running.", {headers: corsHeaders})
         }
         console.log('Run auto mode.')
-        child = execFile('./src/app/api/autoMode/autoMode.py')
+        child = spawn('./src/app/api/autoMode/autoMode.py',{ stdio: 'inherit'})
         return new Response("Auto mode started.", {headers: corsHeaders})
     }
 
