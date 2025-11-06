@@ -1,0 +1,112 @@
+(footprint "GF063P"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(property "Reference" "VR**"
+		(at 0 3.9 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "6247098a-3995-4ad6-90a5-a2fe8d9abbda")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "GF063P"
+		(at 0 1 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "f40f80e6-2922-4865-a55f-4b1c616955c3")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "a7f2e834-771a-4b41-a16f-bb51b3606991")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "155fa9e3-1b72-460b-827e-c004f348f09f")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(fp_rect
+		(start -3.4 -4)
+		(end 3.4 2.8)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "4babe71f-179b-493d-9600-699523256fb7")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 -5.1 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "5a7cdcd2-696c-4f4f-931b-8842a4e2302e")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" thru_hole roundrect
+		(at -2.5 0)
+		(size 1.1 0.9)
+		(drill oval 0.8 0.6)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(roundrect_rratio 0.15)
+		(thermal_bridge_angle 45)
+		(uuid "cdd62600-6abf-4ea0-b430-9ef0e358a317")
+	)
+	(pad "2" thru_hole roundrect
+		(at 0 -2.5)
+		(size 1.1 0.9)
+		(drill oval 0.8 0.6)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(roundrect_rratio 0.15)
+		(thermal_bridge_angle 45)
+		(uuid "8a5a089f-4ba2-4f02-86f5-d545846b2392")
+	)
+	(pad "3" thru_hole roundrect
+		(at 2.5 0)
+		(size 1.1 0.9)
+		(drill oval 0.8 0.6)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(roundrect_rratio 0.15)
+		(thermal_bridge_angle 45)
+		(uuid "e7407af9-594e-4125-8d52-6c4ec3e8c11e")
+	)
+	(embedded_fonts no)
+)
