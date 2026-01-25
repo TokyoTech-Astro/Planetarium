@@ -1465,15 +1465,15 @@
 			(embedded_fonts no)
 		)
 	)
-	(text "TO DO: ダイオードの実装のみ"
+	(text "要検討　アンテナの位置"
 		(exclude_from_sim no)
-		(at 231.648 153.67 0)
+		(at 224.028 150.368 0)
 		(effects
 			(font
 				(size 5.08 5.08)
 			)
 		)
-		(uuid "de170ed1-4570-4c1f-9c87-ed7e2e59f167")
+		(uuid "643b9ac9-82f4-4782-a068-7f8284d4fda3")
 	)
 	(junction
 		(at 114.3 165.1)
@@ -3066,7 +3066,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "GS1010FL:GS1010FL"
 			(at 250.19 95.25 0)
 			(effects
 				(font
