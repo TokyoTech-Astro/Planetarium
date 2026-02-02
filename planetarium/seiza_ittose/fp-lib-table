@@ -3,4 +3,6 @@
   (lib (name "DCJack")(type "KiCad")(uri "${KIPRJMOD}/DCJack.pretty")(options "")(descr ""))
   (lib (name "Seeed_Studio_XIAO_Series")(type "KiCad")(uri "${KIPRJMOD}/Seeed_Studio_XIAO_Series.pretty")(options "")(descr ""))
   (lib (name "GS1010FL")(type "KiCad")(uri "${KIPRJMOD}/GS1010FL.pretty")(options "")(descr ""))
+  (lib (name "VR")(type "KiCad")(uri "${KIPRJMOD}/VR.pretty")(options "")(descr ""))
+  (lib (name "R-78K5.0-2.0L")(type "KiCad")(uri "${KIPRJMOD}/R-78K5.0-2.0L.pretty")(options "")(descr ""))
 )
