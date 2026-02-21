@@ -4,7 +4,7 @@
 	(generator_version "9.0")
 	(layer "F.Cu")
 	(property "Reference" "REF**"
-		(at 0 3.81 180)
+		(at 0 3.81 0)
 		(unlocked yes)
 		(layer "F.SilkS")
 		(uuid "823b2633-6e23-457f-9626-61327a5bc81e")
@@ -63,7 +63,15 @@
 		(layer "F.SilkS")
 		(uuid "bf60deb8-19bb-4be4-b27e-2d47a611cc56")
 	)
-	(pad "1" thru_hole oval
+	(pad "A" thru_hole oval
+		(at 2.5 0)
+		(size 1 0.8)
+		(drill oval 0.8 0.6)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "512b1002-bb00-45b5-87a6-e6f5bdc261e3")
+	)
+	(pad "B" thru_hole oval
 		(at -2.5 0)
 		(size 1 0.8)
 		(drill oval 0.8 0.6)
@@ -71,21 +79,13 @@
 		(remove_unused_layers no)
 		(uuid "32c61f1c-ece7-4743-aecd-3c208518dd65")
 	)
-	(pad "2" thru_hole oval
+	(pad "C" thru_hole oval
 		(at 0 -2.5)
 		(size 1 0.8)
 		(drill oval 0.8 0.6)
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
 		(uuid "5ebd02e4-5315-4972-a8d8-c5d99d4df77d")
-	)
-	(pad "3" thru_hole oval
-		(at 2.5 0)
-		(size 1 0.8)
-		(drill oval 0.8 0.6)
-		(layers "*.Cu" "*.Mask")
-		(remove_unused_layers no)
-		(uuid "512b1002-bb00-45b5-87a6-e6f5bdc261e3")
 	)
 	(embedded_fonts no)
 )

@@ -58,72 +58,7 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [
-        [
-          "silk_edge_clearance|170000000|124500000|a98bbc36-0b71-4bc7-a34a-7a825ae089c0|4c95e1ca-438e-4537-9a65-6356e7feb57f",
-          ""
-        ],
-        [
-          "silk_over_copper|115222800|75386546|5425f037-9d68-4ccc-afc6-e438b1fe4ee8|00000000-0000-0000-0000-000000000000",
-          ""
-        ],
-        [
-          "silk_over_copper|115222800|93153453|1644ce7d-9837-4fdd-9242-0422255cb7ad|00000000-0000-0000-0000-000000000000",
-          ""
-        ],
-        [
-          "silk_over_copper|131300000|114200000|2feb3f32-0d63-4c86-9562-6eb4b01e12f6|00000000-0000-0000-0000-000000000000",
-          ""
-        ],
-        [
-          "silk_over_copper|145700000|68800000|f1587821-820f-4abb-9010-e401e59f0801|00000000-0000-0000-0000-000000000000",
-          ""
-        ],
-        [
-          "silk_over_copper|155300000|114200000|47e5bb9a-5297-4d88-965a-2b458e1775f1|00000000-0000-0000-0000-000000000000",
-          ""
-        ],
-        [
-          "silk_over_copper|163500000|72800000|fba0e7ca-4c32-4180-9ab2-1c006508b684|00000000-0000-0000-0000-000000000000",
-          ""
-        ],
-        [
-          "silk_over_copper|167300000|114200000|f817dd30-d70f-434f-894e-b330bd10ecb5|00000000-0000-0000-0000-000000000000",
-          ""
-        ],
-        [
-          "silk_over_copper|171700000|73000000|d1c54fa7-4841-4ab1-a45c-a536c9dbd6a6|00000000-0000-0000-0000-000000000000",
-          ""
-        ],
-        [
-          "silk_over_copper|171700000|86500000|ec5ba069-e19b-4ce0-acbc-bc13f9960be5|00000000-0000-0000-0000-000000000000",
-          ""
-        ],
-        [
-          "silk_over_copper|171700000|97979086|f9b00865-e21f-4f73-86a1-e962a0078e6a|00000000-0000-0000-0000-000000000000",
-          ""
-        ],
-        [
-          "silk_over_copper|175643419|103700000|df116e68-3ee4-4246-8347-251d16b39817|00000000-0000-0000-0000-000000000000",
-          ""
-        ],
-        [
-          "silk_over_copper|97881199|75380395|cefd63d1-992e-4ff2-9f6a-1bce56251b78|00000000-0000-0000-0000-000000000000",
-          ""
-        ],
-        [
-          "silk_over_copper|97881199|93159682|21ffb2d2-fd0e-48fc-9965-985edbfd1aa2|00000000-0000-0000-0000-000000000000",
-          ""
-        ],
-        [
-          "silk_over_copper|97881964|75380210|93ce042d-fa61-47f7-bb19-933ab9ba0743|00000000-0000-0000-0000-000000000000",
-          ""
-        ],
-        [
-          "text_height|95716000|86048000|d83be482-5d16-4c53-9c8f-f12918e84da1|00000000-0000-0000-0000-000000000000",
-          ""
-        ]
-      ],
+      "drc_exclusions": [],
       "meta": {
         "version": 2
       },
@@ -166,7 +101,7 @@
         "pth_inside_courtyard": "ignore",
         "shorting_items": "error",
         "silk_edge_clearance": "warning",
-        "silk_over_copper": "warning",
+        "silk_over_copper": "ignore",
         "silk_overlap": "warning",
         "skew_out_of_range": "error",
         "solder_mask_bridge": "error",
@@ -703,6 +638,14 @@
       "version": 1
     },
     "net_format_name": "",
+    "ngspice": {
+      "fix_include_paths": true,
+      "meta": {
+        "version": 0
+      },
+      "model_mode": 4,
+      "workbook_filename": ""
+    },
     "page_layout_descr_file": "",
     "plot_directory": "",
     "space_save_all_events": true,
