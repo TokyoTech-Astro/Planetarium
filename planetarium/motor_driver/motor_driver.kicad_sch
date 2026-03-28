@@ -2389,6 +2389,105 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "Mechanical:Heatsink"
+			(pin_names
+				(offset 1.016)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "HS"
+				(at 0 5.08 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "Heatsink"
+				(at 0 -1.27 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0.3048 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0.3048 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Heatsink"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "thermal heat temperature"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_fp_filters" "Heatsink_*"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "Heatsink_0_1"
+				(polyline
+					(pts
+						(xy -0.3302 1.27) (xy -0.9652 1.27) (xy -0.9652 3.81) (xy -1.6002 3.81) (xy -1.6002 1.27) (xy -2.2352 1.27)
+						(xy -2.2352 3.81) (xy -2.8702 3.81) (xy -2.8702 0) (xy -0.9652 0)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+				(polyline
+					(pts
+						(xy -0.3302 1.27) (xy -0.3302 3.81) (xy 0.3048 3.81) (xy 0.3048 1.27) (xy 0.9398 1.27) (xy 0.9398 3.81)
+						(xy 1.5748 3.81) (xy 1.5748 1.27) (xy 2.2098 1.27) (xy 2.2098 3.81) (xy 2.8448 3.81) (xy 2.8448 0)
+						(xy -0.9652 0)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "Seeed_Studio_XIAO_Series-20240814:XIAO-ESP32-C3-SMD"
 			(pin_names
 				(offset 1.016)
@@ -3328,18 +3427,119 @@
 			)
 			(embedded_fonts no)
 		)
-	)
-	(junction
-		(at 201.93 43.18)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "149feb6e-5831-476d-9837-a2d591c9a857")
+		(symbol "power:PWR_FLAG"
+			(power)
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 0)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "#FLG"
+				(at 0 1.905 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Value" "PWR_FLAG"
+				(at 0 3.81 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "Special symbol for telling ERC where power comes from"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "flag power"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "PWR_FLAG_0_0"
+				(pin power_out line
+					(at 0 0 90)
+					(length 0)
+					(name "~"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(symbol "PWR_FLAG_0_1"
+				(polyline
+					(pts
+						(xy 0 0) (xy 0 1.27) (xy -1.016 1.905) (xy 0 2.54) (xy 1.016 1.905) (xy 0 1.27)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 	)
 	(junction
 		(at 76.2 129.54)
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "185794c9-e9ec-4ba5-b8bf-1169da63c960")
+	)
+	(junction
+		(at 181.61 148.59)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "2474009b-3eca-4813-8c85-dd6ba8c1569f")
 	)
 	(junction
 		(at 210.82 31.75)
@@ -3352,6 +3552,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "6e1e893b-7d27-4a50-82cf-772f40e77583")
+	)
+	(junction
+		(at 48.26 38.1)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "7d0e02f4-35d2-45dd-8621-524d4fc0747d")
 	)
 	(junction
 		(at 237.49 50.8)
@@ -3372,6 +3578,12 @@
 		(uuid "9d77fa4c-3574-4cae-9ba5-f6319f214d74")
 	)
 	(junction
+		(at 201.93 43.18)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "9db9e263-ba63-450f-b54f-3e60904cf626")
+	)
+	(junction
 		(at 226.06 69.85)
 		(diameter 0)
 		(color 0 0 0 0)
@@ -3388,6 +3600,12 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "c2d668a0-7d3d-42c0-a692-17f6b4080e95")
+	)
+	(junction
+		(at 48.26 43.18)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "c4977374-8d54-4b5a-a3f7-88fcb0b9e1d8")
 	)
 	(junction
 		(at 226.06 57.15)
@@ -3486,6 +3704,16 @@
 			(type default)
 		)
 		(uuid "0bf5e21e-8812-4bf6-ade4-f6e4ae3bef81")
+	)
+	(wire
+		(pts
+			(xy 210.82 48.26) (xy 210.82 50.8)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1294c888-e413-4a47-97e7-73dbd41aa073")
 	)
 	(wire
 		(pts
@@ -3589,16 +3817,6 @@
 	)
 	(wire
 		(pts
-			(xy 201.93 43.18) (xy 203.2 43.18)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "26614be2-1f90-4b9f-a79e-7cba97ba84b8")
-	)
-	(wire
-		(pts
 			(xy 222.25 62.23) (xy 226.06 62.23)
 		)
 		(stroke
@@ -3606,6 +3824,16 @@
 			(type default)
 		)
 		(uuid "280caa15-7c70-4fb8-883b-476e8e5d2f03")
+	)
+	(wire
+		(pts
+			(xy 210.82 31.75) (xy 210.82 38.1)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "304e4995-1ed1-4722-b665-09cefbebe5e3")
 	)
 	(wire
 		(pts
@@ -3839,16 +4067,6 @@
 	)
 	(wire
 		(pts
-			(xy 210.82 31.75) (xy 210.82 38.1)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "602ae752-6ec1-43cf-8e64-f67abf6801d6")
-	)
-	(wire
-		(pts
 			(xy 76.2 129.54) (xy 78.74 129.54)
 		)
 		(stroke
@@ -3856,6 +4074,16 @@
 			(type default)
 		)
 		(uuid "603656d4-7a58-42c2-873a-e9fb84e7ef7a")
+	)
+	(wire
+		(pts
+			(xy 200.66 43.18) (xy 201.93 43.18)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "61392293-b6c2-4393-ba97-e6752c78ae45")
 	)
 	(wire
 		(pts
@@ -3879,6 +4107,16 @@
 	)
 	(wire
 		(pts
+			(xy 201.93 43.18) (xy 203.2 43.18)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6507a54e-f9d0-4bfc-ab5f-af4a7841f33b")
+	)
+	(wire
+		(pts
 			(xy 72.39 147.32) (xy 76.2 147.32)
 		)
 		(stroke
@@ -3886,6 +4124,16 @@
 			(type default)
 		)
 		(uuid "651404f4-a4b8-4dc5-9200-3151f91d7ef4")
+	)
+	(wire
+		(pts
+			(xy 57.15 33.02) (xy 57.15 38.1)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6725852b-36a4-4a2e-85f1-e15858c4f465")
 	)
 	(wire
 		(pts
@@ -3939,6 +4187,16 @@
 	)
 	(wire
 		(pts
+			(xy 57.15 49.53) (xy 57.15 43.18)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "76d15538-95fd-4306-968b-75fc1b5add2f")
+	)
+	(wire
+		(pts
 			(xy 154.94 140.97) (xy 160.02 140.97)
 		)
 		(stroke
@@ -3989,6 +4247,16 @@
 	)
 	(wire
 		(pts
+			(xy 189.23 148.59) (xy 181.61 148.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "7ba31933-1cfc-4f81-9cd1-3b4efc050616")
+	)
+	(wire
+		(pts
 			(xy 154.94 148.59) (xy 181.61 148.59)
 		)
 		(stroke
@@ -4016,16 +4284,6 @@
 			(type default)
 		)
 		(uuid "805a0144-fdff-4f6b-b429-33819a45c6f2")
-	)
-	(wire
-		(pts
-			(xy 200.66 43.18) (xy 201.93 43.18)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "836c751c-cc6c-433b-8eaf-40775c4e9d89")
 	)
 	(wire
 		(pts
@@ -4349,6 +4607,16 @@
 	)
 	(wire
 		(pts
+			(xy 189.23 137.16) (xy 189.23 148.59)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d798f45d-0ab9-45da-8390-21c5f7c214f5")
+	)
+	(wire
+		(pts
 			(xy 54.61 116.84) (xy 54.61 121.92)
 		)
 		(stroke
@@ -4356,6 +4624,16 @@
 			(type default)
 		)
 		(uuid "da93780b-fc42-44c9-bc09-1fdf725791c2")
+	)
+	(wire
+		(pts
+			(xy 57.15 43.18) (xy 48.26 43.18)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e03f983b-82fc-45ae-835a-d1704d1d693e")
 	)
 	(wire
 		(pts
@@ -4376,16 +4654,6 @@
 			(type default)
 		)
 		(uuid "e360f68c-4fa0-479e-98ff-9f5962102540")
-	)
-	(wire
-		(pts
-			(xy 210.82 48.26) (xy 210.82 50.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "e40522ef-f109-4e58-b2db-85631e190bcf")
 	)
 	(wire
 		(pts
@@ -4456,6 +4724,16 @@
 			(type default)
 		)
 		(uuid "f3f1a6e6-4dc1-4003-88be-52c03e95dfb5")
+	)
+	(wire
+		(pts
+			(xy 57.15 38.1) (xy 48.26 38.1)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f96356c8-21e4-4546-829b-87c85839f24c")
 	)
 	(wire
 		(pts
@@ -5393,7 +5671,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder"
 			(at 113.792 78.74 90)
 			(effects
 				(font
@@ -5608,7 +5886,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder"
 			(at 99.822 78.74 90)
 			(effects
 				(font
@@ -5810,7 +6088,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder"
 			(at 228.2952 118.11 0)
 			(effects
 				(font
@@ -5819,7 +6097,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "~"
+		(property "Datasheet" "https://akizukidenshi.com/catalog/g/g105728/"
 			(at 227.33 114.3 0)
 			(effects
 				(font
@@ -5887,7 +6165,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "~"
+		(property "Datasheet" "https://akizukidenshi.com/catalog/g/g109408/"
 			(at 36.83 41.656 0)
 			(effects
 				(font
@@ -5923,15 +6201,15 @@
 	(symbol
 		(lib_id "Device:Q_PMOS")
 		(at 208.28 43.18 0)
+		(mirror x)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(fields_autoplaced yes)
 		(uuid "3dcb8b7d-9388-4958-a27d-9117858425fc")
 		(property "Reference" "Q1"
-			(at 214.63 41.9099 0)
+			(at 214.63 44.4501 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5940,7 +6218,7 @@
 			)
 		)
 		(property "Value" "Q_PMOS"
-			(at 214.63 44.4499 0)
+			(at 214.63 41.9101 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -5949,7 +6227,7 @@
 			)
 		)
 		(property "Footprint" "Package_TO_SOT_SMD:TSOT-23_HandSoldering"
-			(at 213.36 40.64 0)
+			(at 213.36 45.72 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -6153,7 +6431,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric_Pad0.74x0.62mm_HandSolder"
+		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder"
 			(at 238.4552 64.77 0)
 			(effects
 				(font
@@ -6162,7 +6440,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "~"
+		(property "Datasheet" "https://akizukidenshi.com/catalog/g/g114526/"
 			(at 237.49 60.96 0)
 			(effects
 				(font
@@ -6388,6 +6666,72 @@
 			(project "motor_driver"
 				(path "/17bd9107-b6b0-4954-861d-04d32c1a303b"
 					(reference "#PWR03")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:PWR_FLAG")
+		(at 57.15 49.53 180)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "7996b1b6-5afb-4765-8d65-363e964db719")
+		(property "Reference" "#FLG02"
+			(at 57.15 51.435 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "PWR_FLAG"
+			(at 57.15 54.61 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 57.15 49.53 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 57.15 49.53 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Special symbol for telling ERC where power comes from"
+			(at 57.15 49.53 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "c035b2d5-ced3-4d26-85c6-906d652533ac")
+		)
+		(instances
+			(project "motor_driver"
+				(path "/17bd9107-b6b0-4954-861d-04d32c1a303b"
+					(reference "#FLG02")
 					(unit 1)
 				)
 			)
@@ -6705,7 +7049,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder"
 			(at 227.838 43.18 90)
 			(effects
 				(font
@@ -6850,7 +7194,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "~"
+		(property "Datasheet" "https://akizukidenshi.com/catalog/g/g114901/"
 			(at 214.63 53.086 0)
 			(effects
 				(font
@@ -6947,6 +7291,72 @@
 			(project "motor_driver"
 				(path "/17bd9107-b6b0-4954-861d-04d32c1a303b"
 					(reference "#PWR013")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:PWR_FLAG")
+		(at 189.23 137.16 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "b5ea3c23-6036-4f10-b9f2-51022cc9a259")
+		(property "Reference" "#FLG03"
+			(at 189.23 135.255 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "PWR_FLAG"
+			(at 189.23 132.08 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 189.23 137.16 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 189.23 137.16 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Special symbol for telling ERC where power comes from"
+			(at 189.23 137.16 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "2b40e4d6-64bf-44f3-bcd5-c5107ca0c9fc")
+		)
+		(instances
+			(project "motor_driver"
+				(path "/17bd9107-b6b0-4954-861d-04d32c1a303b"
+					(reference "#FLG03")
 					(unit 1)
 				)
 			)
@@ -7085,6 +7495,72 @@
 			(project "motor_driver"
 				(path "/17bd9107-b6b0-4954-861d-04d32c1a303b"
 					(reference "#PWR010")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:PWR_FLAG")
+		(at 57.15 33.02 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "c119bb31-9780-40a1-bbe2-94bfc688e581")
+		(property "Reference" "#FLG01"
+			(at 57.15 31.115 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Value" "PWR_FLAG"
+			(at 57.15 27.94 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 57.15 33.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 57.15 33.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Special symbol for telling ERC where power comes from"
+			(at 57.15 33.02 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "1d5db7be-8842-4554-8a97-61e02114ab6f")
+		)
+		(instances
+			(project ""
+				(path "/17bd9107-b6b0-4954-861d-04d32c1a303b"
+					(reference "#FLG01")
 					(unit 1)
 				)
 			)
@@ -7461,7 +7937,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder"
 			(at 196.85 44.958 90)
 			(effects
 				(font
@@ -7531,7 +8007,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder"
 			(at 229.108 128.27 90)
 			(effects
 				(font
@@ -7601,7 +8077,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric_Pad0.72x0.64mm_HandSolder"
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric_Pad0.98x0.95mm_HandSolder"
 			(at 203.708 36.83 90)
 			(effects
 				(font
@@ -7900,6 +8376,70 @@
 			(project "motor_driver"
 				(path "/17bd9107-b6b0-4954-861d-04d32c1a303b"
 					(reference "#PWR017")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Mechanical:Heatsink")
+		(at 160.02 83.82 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board no)
+		(dnp no)
+		(fields_autoplaced yes)
+		(uuid "f1cc57a1-7e8c-4f83-b99e-4636965a71d2")
+		(property "Reference" "HS1"
+			(at 163.83 80.6449 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "Heatsink"
+			(at 163.83 83.1849 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" ""
+			(at 160.3248 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://akizukidenshi.com/catalog/g/g105050/"
+			(at 160.3248 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" "Heatsink"
+			(at 160.02 83.82 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(instances
+			(project ""
+				(path "/17bd9107-b6b0-4954-861d-04d32c1a303b"
+					(reference "HS1")
 					(unit 1)
 				)
 			)
