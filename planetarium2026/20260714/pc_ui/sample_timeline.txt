@@ -1,0 +1,6 @@
+# PlaneControl Timeline v1
+# time_seconds,angle_deg,speed_deg_per_sec,first_star,stars,pattern1..pattern8
+# bool は ON/OFF, true/false, 1/0 のいずれでも可。行は時刻順でなくても読み込み時に整列されます。
+0.000,0.0,2.0,ON,ON,ON,OFF,OFF,OFF,OFF,OFF,OFF,OFF
+12.000,30.0,4.0,ON,ON,OFF,ON,OFF,OFF,OFF,OFF,OFF,OFF
+30.000,90.0,3.0,OFF,ON,OFF,OFF,ON,OFF,OFF,OFF,OFF,OFF

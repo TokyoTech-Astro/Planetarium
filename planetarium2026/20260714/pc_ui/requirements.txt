@@ -1,0 +1,4 @@
+pygame==2.6.1
+pyserial==3.5
+pyinstaller==6.14.2
+appdirs==1.4.4
