@@ -30,6 +30,12 @@ constexpr uint8_t PIN_STATUS_LED = D10;
 #ifndef MOTOR_MICROSTEPS
 #define MOTOR_MICROSTEPS 1
 #endif
+#ifndef MOTOR_OUTPUT_CALIBRATION
+#define MOTOR_OUTPUT_CALIBRATION 1.0f
+#endif
+#ifndef MOTOR_OUTPUT_ACCEL_DEG_SEC2
+#define MOTOR_OUTPUT_ACCEL_DEG_SEC2 10.0f
+#endif
 #ifndef MOTOR_DIRECTION_INVERT
 #define MOTOR_DIRECTION_INVERT 0
 #endif
@@ -38,7 +44,10 @@ constexpr uint8_t PIN_STATUS_LED = D10;
 #endif
 
 constexpr float STEPS_PER_DEGREE =
-    (MOTOR_FULL_STEPS_PER_REV * MOTOR_MICROSTEPS) / 360.0f;
+    (MOTOR_FULL_STEPS_PER_REV * MOTOR_MICROSTEPS *
+     MOTOR_OUTPUT_CALIBRATION) / 360.0f;
+static_assert(MOTOR_OUTPUT_CALIBRATION > 0.0f,
+              "MOTOR_OUTPUT_CALIBRATION must be positive");
 constexpr uint32_t MOTOR_TIMER_HZ = 40000;
 constexpr float CONTINUOUS_CW_COMMAND_DEG = 999.0f;
 constexpr float CONTINUOUS_CCW_COMMAND_DEG = -999.0f;
@@ -70,6 +79,7 @@ volatile int64_t physicalSteps = 0;
 volatile int64_t zeroOffsetSteps = 0;
 volatile int64_t targetSteps = 0;
 volatile uint32_t stepRateMilliHz = 0;
+volatile uint32_t requestedStepRateMilliHz = 0;
 volatile uint32_t stepPhase = 0;
 volatile int8_t jogDirection = 0;  // -1: CCW, +1: CW, 0: position mode
 portMUX_TYPE motorMux = portMUX_INITIALIZER_UNLOCKED;
@@ -153,10 +163,43 @@ void IRAM_ATTR onMotorTimer() {
   portEXIT_CRITICAL_ISR(&motorMux);
 }
 
-void updateStepRate(float speedDegSec) {
+void requestStepRate(float speedDegSec) {
   uint32_t rate = (uint32_t)llroundf(speedDegSec * STEPS_PER_DEGREE * 1000.0f);
   portENTER_CRITICAL(&motorMux);
-  stepRateMilliHz = rate;
+  requestedStepRateMilliHz = rate;
+  portEXIT_CRITICAL(&motorMux);
+}
+
+void updateMotorRamp(uint32_t now) {
+  static uint32_t lastUpdate = 0;
+  if (lastUpdate == 0) {
+    lastUpdate = now;
+    return;
+  }
+  const uint32_t elapsedMs = now - lastUpdate;
+  if (elapsedMs < 5) return;
+  lastUpdate = now;
+
+  portENTER_CRITICAL(&motorMux);
+  const int64_t remaining = llabs(targetSteps - physicalSteps);
+  const bool moving = jogDirection != 0 || remaining != 0;
+  uint32_t targetRate = moving ? requestedStepRateMilliHz : 0;
+
+  // Trapezoidal speed profile: ramp up gently and slow down before target.
+  if (jogDirection == 0 && remaining > 0) {
+    const float accelStepsSec2 =
+        MOTOR_OUTPUT_ACCEL_DEG_SEC2 * STEPS_PER_DEGREE;
+    const uint32_t brakingRate = (uint32_t)llroundf(
+        sqrtf(2.0f * accelStepsSec2 * remaining) * 1000.0f);
+    targetRate = min(targetRate, brakingRate);
+  }
+  const uint32_t maxChange = (uint32_t)max(
+      1.0f, MOTOR_OUTPUT_ACCEL_DEG_SEC2 * STEPS_PER_DEGREE * elapsedMs);
+  if (stepRateMilliHz < targetRate) {
+    stepRateMilliHz += min(maxChange, targetRate - stepRateMilliHz);
+  } else if (stepRateMilliHz > targetRate) {
+    stepRateMilliHz -= min(maxChange, stepRateMilliHz - targetRate);
+  }
   portEXIT_CRITICAL(&motorMux);
 }
 
@@ -207,7 +250,7 @@ void applyMotorTarget(float angleDeg, float speedDegSec) {
     targetSteps = physicalSteps + delta;
   }
   portEXIT_CRITICAL(&motorMux);
-  updateStepRate(commandedSpeedDegSec);
+  requestStepRate(commandedSpeedDegSec);
   motorLastApplied = millis();
 }
 
@@ -216,6 +259,7 @@ void stopMotorImmediatelyForPcLoss() {
   jogDirection = 0;
   targetSteps = physicalSteps;
   stepRateMilliHz = 0;
+  requestedStepRateMilliHz = 0;
   stepPhase = 0;
   portEXIT_CRITICAL(&motorMux);
   commandedSpeedDegSec = 0.0f;
@@ -249,7 +293,7 @@ void applyMotorCalibration(const char *action, float speedDegSec,
                            float valueDeg) {
   commandedSpeedDegSec = min(fabsf(speedDegSec),
                               (float)MOTOR_MAX_OUTPUT_SPEED_DEG_SEC);
-  updateStepRate(commandedSpeedDegSec);
+  requestStepRate(commandedSpeedDegSec);
   portENTER_CRITICAL(&motorMux);
   if (!strcmp(action, "jog_cw")) {
     jogDirection = 1;
@@ -260,6 +304,7 @@ void applyMotorCalibration(const char *action, float speedDegSec,
     targetSteps = physicalSteps;
     commandedSpeedDegSec = 0;
     stepRateMilliHz = 0;
+    requestedStepRateMilliHz = 0;
   } else if (!strcmp(action, "move_relative")) {
     jogDirection = 0;
     targetSteps = physicalSteps + llroundf(valueDeg * STEPS_PER_DEGREE);
@@ -269,6 +314,7 @@ void applyMotorCalibration(const char *action, float speedDegSec,
     zeroOffsetSteps = physicalSteps;
     commandedSpeedDegSec = 0;
     stepRateMilliHz = 0;
+    requestedStepRateMilliHz = 0;
     motorOriginSet = true;
     originWarningSent = false;
   } else if (!strcmp(action, "set_angle")) {
@@ -278,6 +324,7 @@ void applyMotorCalibration(const char *action, float speedDegSec,
                       llroundf(normalizeAngle(valueDeg) * STEPS_PER_DEGREE);
     commandedSpeedDegSec = 0;
     stepRateMilliHz = 0;
+    requestedStepRateMilliHz = 0;
     motorOriginSet = true;
     originWarningSent = false;
   }
@@ -455,6 +502,7 @@ void handleLine() {
       jogDirection = 0;
       targetSteps = physicalSteps;
       stepRateMilliHz = 0;
+      requestedStepRateMilliHz = 0;
       portEXIT_CRITICAL(&motorMux);
       commandedSpeedDegSec = 0;
       jsonEvent("motor_calibration_finished", "motor");
@@ -566,6 +614,7 @@ void communicationTask(void *) {
     }
     retryLight();
     updatePcSafetyWatchdog();
+    updateMotorRamp(millis());
     static uint32_t lastStatus = 0;
     if (millis() - lastStatus >= 250) {
       lastStatus = millis();
