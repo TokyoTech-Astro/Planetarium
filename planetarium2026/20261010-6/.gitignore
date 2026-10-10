@@ -1,0 +1,8 @@
+.pio/
+__pycache__/
+pc_ui/vendor/
+pc_ui/build/
+pc_ui/dist/
+pc_ui/*.exe
+*.elf
+*.zip

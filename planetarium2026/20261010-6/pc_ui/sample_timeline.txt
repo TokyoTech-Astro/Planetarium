@@ -1,0 +1,6 @@
+# PlaneControl Timeline v1
+# time_seconds,angle_deg,speed_deg_per_sec,first_star,stars,D7,D8,D9,D10,D5,D4,D3,D2
+# D7 and D5 are unconnected and always OFF.
+0.000,0.0,2.0,ON,ON,OFF,ON,OFF,OFF,OFF,OFF,OFF,OFF
+12.000,30.0,4.0,ON,ON,OFF,OFF,ON,OFF,OFF,OFF,OFF,OFF
+30.000,90.0,3.0,OFF,ON,OFF,OFF,OFF,ON,OFF,OFF,OFF,OFF

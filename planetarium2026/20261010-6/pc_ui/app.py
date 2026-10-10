@@ -1,0 +1,1301 @@
+import bisect, csv, ctypes, hashlib, json, math, os, queue, sys, threading, time, wave
+from datetime import datetime, timedelta
+from pathlib import Path
+VENDOR = Path(__file__).with_name("vendor")
+if VENDOR.exists(): sys.path.insert(0, str(VENDOR))
+import tkinter as tk
+from tkinter import ttk, filedialog, messagebox
+from audiostretchy.stretch import stretch_audio
+
+try:
+    import serial
+    from serial.tools import list_ports
+except Exception:
+    serial = None
+try:
+    import pygame
+except Exception:
+    pygame = None
+
+APP_DIR = Path(os.getenv("APPDATA", Path.home())) / "PlaneControl20260717"
+SETTINGS = APP_DIR / "settings.json"
+BG, PANEL, CARD, TEXT, MUTED = "#0b0f14", "#121923", "#182231", "#ecf2fa", "#8ca0b8"
+GREEN, RED, ORANGE, BLUE, OFF = "#2bd576", "#ff4d67", "#ff9f43", "#4da3ff", "#526170"
+HELP_BLUE = "#315b82"
+FIELDS = ["angle", "speed", "first", "stars"] + [f"p{i}" for i in range(1, 9)]
+LABELS = {"angle":"目標角度 (°)","speed":"回転速度 (°/s)","first":"一等星","stars":"恒星","p1":"未接続 (D7)","p2":"ペガスス座","p3":"いて座","p4":"さそり座","p5":"未接続 (D5)","p6":"こいぬ座","p7":"おおいぬ座","p8":"オリオン座"}
+# 未接続の予備系統も、手動操作・タイムライン編集・送信を許可する。
+UNCONNECTED_FIELDS = set()
+LABELS["speed"]="回転速度 (+時計／−反時計) °/s"
+
+def as_bool(s): return str(s).strip().lower() in ("1","true","on","yes","はい")
+def defaults(): return {"angle":0.0,"speed":0.0,"first":False,"stars":False,**{f"p{i}":False for i in range(1,9)}}
+def fmt_time(sec):
+    sec=max(0,float(sec)); return f"{int(sec//60):02d}:{sec%60:05.2f}"
+def fmt_uptime(sec):
+    sec=max(0,int(sec));days,sec=divmod(sec,86400);hours,sec=divmod(sec,3600);minutes,seconds=divmod(sec,60)
+    return f"{days}日 {hours:02d}:{minutes:02d}:{seconds:02d}" if days else f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+def zero_return_delta(angle_deg, clockwise):
+    """Return the forced-direction relative move needed to reach logical 0°."""
+    angle=float(angle_deg)%360.0
+    if min(angle,360.0-angle)<0.01:return 0.0
+    return 360.0-angle if clockwise else -angle
+
+def timeline_motor_position(rows, seconds):
+    """Ideal cumulative show angle, including partially completed moves."""
+    angle=0.0
+    for i,row in enumerate(rows):
+        if row["time"]>=seconds:break
+        end=min(seconds,rows[i+1]["time"] if i+1<len(rows) else seconds)
+        speed=float(row["speed"]);travel=abs(speed)*max(0,end-row["time"])
+        if abs(abs(row["angle"])-999)<.01:
+            direction=-1 if speed<0 or (speed==0 and row["angle"]<0) else 1
+            angle+=direction*travel
+        elif speed:
+            distance=(float(row["angle"])-angle)%360 if speed>0 else -((angle-float(row["angle"]))%360)
+            if min(abs(distance),360-abs(distance))<1e-7:distance=0.0
+            angle+=math.copysign(min(abs(distance),travel),speed)
+    return angle
+
+def default_output_name():
+    try:
+        if pygame is not None:
+            if not pygame.mixer.get_init():pygame.mixer.init()
+            from pygame._sdl2 import audio as sdl_audio
+            names=sdl_audio.get_audio_device_names(False)
+            if names:return names[0]
+    except Exception:pass
+    if os.name!="nt":return "既定の音声出力"
+    class WaveOutCaps(ctypes.Structure):
+        _fields_=[("wMid",ctypes.c_ushort),("wPid",ctypes.c_ushort),("vDriverVersion",ctypes.c_uint),("szPname",ctypes.c_wchar*32),("dwFormats",ctypes.c_uint),("wChannels",ctypes.c_ushort),("wReserved1",ctypes.c_ushort),("dwSupport",ctypes.c_uint)]
+    try:
+        caps=WaveOutCaps();fn=ctypes.windll.winmm.waveOutGetDevCapsW;fn.argtypes=[ctypes.c_size_t,ctypes.POINTER(WaveOutCaps),ctypes.c_uint];fn.restype=ctypes.c_uint;result=fn(ctypes.c_size_t(-1),ctypes.byref(caps),ctypes.sizeof(caps));return caps.szPname if result==0 and caps.szPname else "Windows既定の音声出力"
+    except Exception:return "Windows既定の音声出力"
+
+def load_timeline(path):
+    rows=[]
+    with open(path,"r",encoding="utf-8-sig") as f:
+        for raw in f:
+            if not raw.strip() or raw.lstrip().startswith("#"): continue
+            a=next(csv.reader([raw]));
+            if len(a)!=13: raise ValueError(f"列数は13必要です: {raw.strip()}")
+            v=defaults(); v["angle"]=float(a[1]);v["speed"]=float(a[2]);v["first"]=as_bool(a[3]);v["stars"]=as_bool(a[4])
+            for i in range(8):v[f"p{i+1}"]=as_bool(a[5+i])
+            for key in UNCONNECTED_FIELDS:v[key]=False
+            rows.append({"time":float(a[0]),**v})
+    if not rows: raise ValueError("イベントがありません")
+    return sorted(rows,key=lambda x:x["time"])
+
+def save_timeline(path, rows):
+    with open(path,"w",encoding="utf-8",newline="") as f:
+        f.write("# PlaneControl Timeline v1\n# time_seconds,angle_deg,speed_deg_per_sec,first_star,stars,constellation1..constellation8\n")
+        w=csv.writer(f,lineterminator="\n")
+        for r in sorted(rows,key=lambda x:x["time"]):w.writerow([f'{r["time"]:.3f}',r["angle"],r["speed"],*("ON" if (r[k] and k not in UNCONNECTED_FIELDS) else "OFF" for k in ["first","stars"]+[f"p{i}" for i in range(1,9)])])
+
+class Led(tk.Canvas):
+    def __init__(self,parent,size=16):
+        super().__init__(parent,width=size,height=size,bg=parent.cget("bg"),highlightthickness=0);self.dot=self.create_oval(2,2,size-2,size-2,fill=OFF,outline="")
+    def set(self,color):self.itemconfigure(self.dot,fill=color)
+
+class App:
+    def __init__(self,root):
+        self.root=root;root.title("プラネ統合制御 20261010-6");root.geometry(f"{min(1480,root.winfo_screenwidth()-60)}x{min(900,root.winfo_screenheight()-100)}");root.minsize(760,480);root.configure(bg=BG)
+        self.ttk_style=ttk.Style(root)
+        try:self.ttk_style.theme_use("clam")
+        except tk.TclError:pass
+        self.ttk_style.configure("Dark.Treeview",background="#101821",fieldbackground="#101821",foreground="#dce8f5",bordercolor="#26384b",lightcolor="#26384b",darkcolor="#26384b",borderwidth=1,rowheight=24)
+        self.ttk_style.configure("Dark.Treeview.Heading",background="#253349",foreground="#f2f7fc",bordercolor="#3a4d66",lightcolor="#3a4d66",darkcolor="#172130",relief="flat",font=("Yu Gothic UI",9,"bold"))
+        self.ttk_style.map("Dark.Treeview",background=[("selected","#0875c1")],foreground=[("selected","#ffffff")]);self.ttk_style.map("Dark.Treeview.Heading",background=[("active","#30445f")],foreground=[("active","#ffffff")])
+        self.ttk_style.configure("Editor.TCombobox",fieldbackground="#101821",background="#253349",foreground="#ffffff",arrowcolor="#ffffff",bordercolor="#0875c1",lightcolor="#0875c1",darkcolor="#0875c1");self.ttk_style.map("Editor.TCombobox",fieldbackground=[("readonly","#101821")],foreground=[("readonly","#ffffff")],selectbackground=[("readonly","#0875c1")],selectforeground=[("readonly","#ffffff")]);root.option_add("*TCombobox*Listbox.background","#101821");root.option_add("*TCombobox*Listbox.foreground","#ffffff");root.option_add("*TCombobox*Listbox.selectBackground","#0875c1")
+        for orient in ("Vertical","Horizontal"):self.ttk_style.configure(f"Dark.{orient}.TScrollbar",background="#34475a",troughcolor="#101821",bordercolor="#101821",arrowcolor="#eaf2fa",lightcolor="#34475a",darkcolor="#34475a")
+        APP_DIR.mkdir(parents=True,exist_ok=True);self.cfg=self.load_cfg();self.timeline=[];self.timeline_times=[];self.audio="";self.duration=0;self.playing=False;self.play_origin=0;self.seek_base=0;self.rate=1.0
+        self.ser=None;self.serial_write_lock=threading.Lock();self.rx=queue.Queue();self.last_pc=None;self.uart_health="disconnected";self.uart_connected_at=None
+        self.auto_reconnect_enabled=False;self.reconnect_port_identity=self.cfg.get("serial_identity");self.next_reconnect_at=0.0;self.reconnect_log_at=0.0;self.port_choices={};self.port_scan_active=False
+        self.constellation_pins=[7,8,9,10,5,4,3,2]
+        for i,name in enumerate(self.cfg.get("constellation_names",[]),1):LABELS[f"p{i}"]=name
+        if "未接続" in LABELS["p5"]:LABELS["p5"]="こぐま座"
+        self.last_speaker_check=0;self.output_device=default_output_name();self.scrub_was_playing=False;self.motor_calibration_mode=False;self.motor_origin_set=False;self.motor_motion="stopped";self.motor_target_angle=0.0;self.mcu_uptime={"pc":0.0,"light":0.0};self.calibration_window=None;self.manual_motor_window=None;self.manual_motor_mode=False;self.manual_motor_armed=False;self.links={"motor":{"last":None,"remote_ack":0,"online":False,"unstable":False},"light":{"last":None,"remote_ack":0,"online":False,"unstable":False}}
+        self.motor_playback_stopped=True
+        self.motor_transfer=None;self.last_motor_status=0.0
+        self.desired=defaults();self.actual=defaults();self.override={k:tk.BooleanVar(value=False) for k in FIELDS};self.manual={k:tk.StringVar(value="0" if k in ("angle","speed") else "OFF") for k in FIELDS}
+        self.auto=tk.BooleanVar(value=True);self.step_jump_enabled=tk.BooleanVar(value=True);self.vars={};self.last_sent=None;self.flash=False;self.last_flash_at=time.monotonic();self.current_step_shown=None;self.nav_step_index=None;self.nav_step_at=0;self.step_value_labels=[];self.refreshing_step_colors=False;self.step_color_job=None;self.build();self.restore();self.root.after(100,self.tick);self.root.protocol("WM_DELETE_WINDOW",self.close)
+        self.rate_results=queue.Queue();self.rate_conversion_active=False;self.last_keepalive=0.0;self.emergency_stop=False
+    def load_cfg(self):
+        cfg={"uart_interval":10.0,"esp_interval":10.0,"retry_timeout":0.5,"max_retries":5,"fade_seconds":5.0}
+        try:cfg.update(json.loads(SETTINGS.read_text(encoding="utf-8")))
+        except Exception:pass
+        return cfg
+    def save_cfg(self):
+        self.cfg.update({"audio":self.audio,"timeline":getattr(self,"timeline_path","")});SETTINGS.write_text(json.dumps(self.cfg,ensure_ascii=False,indent=2),encoding="utf-8")
+    def frame(self,parent,**kw):return tk.Frame(parent,bg=kw.pop("bg",PANEL),**kw)
+    def label(self,parent,text="",**kw):return tk.Label(parent,text=text,bg=kw.pop("bg",parent.cget("bg")),fg=kw.pop("fg",TEXT),font=kw.pop("font",("Yu Gothic UI",10)),**kw)
+    def button(self,parent,text,cmd,**kw):return tk.Button(parent,text=text,command=cmd,bg=kw.pop("bg","#253349"),fg=TEXT,activebackground=BLUE,activeforeground="white",relief="flat",font=("Yu Gothic UI",10,"bold"),padx=kw.pop("padx",10),pady=kw.pop("pady",6),**kw)
+    def show_help_window(self,title,content,parent=None):
+        w=tk.Toplevel(parent or self.root);w.title(title);w.geometry("760x620");w.configure(bg=BG);box=tk.Text(w,bg="#101821",fg=TEXT,insertbackground=TEXT,wrap="word",relief="flat",font=("Yu Gothic UI",10),padx=18,pady=14);scroll=ttk.Scrollbar(w,orient="vertical",command=box.yview);box.configure(yscrollcommand=scroll.set);box.pack(side="left",fill="both",expand=True,padx=(12,0),pady=12);scroll.pack(side="right",fill="y",padx=(0,12),pady=12);box.insert("1.0",content);box.config(state="disabled")
+    def show_main_help(self):
+        self.show_help_window("プラネ統合制御の使い方","""【基本操作】
+1. 統括・モーターC3とPCをUSB接続し、COMポートを選んでUART接続します。
+2. 音声ファイルとタイムラインTXTを選択します。
+3. 再生ボタンで音声と自動制御を開始します。
+
+【角度】
+角度は0°以上360°未満で管理します。目標角度999/-999は無限回転です。回転速度の正負で方向を指定します。再起動後は原点未設定になるため、音声を停止して「モーター0°位置設定」を実行してください。
+
+【手動上書き】
+上書きをONにすると、その系統だけタイムライン設定より手動値を優先します。「今すぐ全設定を送信」で直ちに送信できます。
+
+【モーター手動操作】
+「モーター手動操作」を開き、手動モードを開始します。音声とライトの自動制御を続けながら、指定した角度だけ時計回り／反時計回りに移動できます。回転速度も指定できます。手動モード中に音声を一時停止するとモーターも停止します。通常の角度制御へ戻すと、現在のタイムライン目標角度へ移動します。
+
+【表示】
+緑は正常、オレンジは不安定、赤は未接続・未反映です。実機値に?が付く場合は現在値を確認できていません。
+
+【指示送信設定】
+右上の「指示送信設定」からSTEPを編集します。詳しい操作は設定画面内の「使い方」を確認してください。""")
+    def build(self):
+        self.label(self.root,"プラネ統合制御",bg=BG,font=("Yu Gothic UI",16,"bold")).pack(anchor="w",padx=14,pady=(6,0))
+        toolbar=self.frame(self.root,bg=BG);toolbar.pack(fill="x",padx=14,pady=(2,4))
+        top_canvas=tk.Canvas(toolbar,bg=BG,height=48,highlightthickness=0);top_canvas.pack(fill="x")
+        top_scroll=ttk.Scrollbar(toolbar,orient="horizontal",command=top_canvas.xview,style="Dark.Horizontal.TScrollbar");top_scroll.pack(fill="x");top_canvas.configure(xscrollcommand=top_scroll.set)
+        top=self.frame(top_canvas,bg=BG);top_canvas.create_window(0,0,window=top,anchor="nw");top.bind("<Configure>",lambda _e:top_canvas.configure(scrollregion=top_canvas.bbox("all")))
+        self.port=tk.StringVar();self.portbox=ttk.Combobox(top,textvariable=self.port,width=15,state="readonly");self.portbox.pack(side="left",padx=(30,6));self.button(top,"更新",self.refresh_ports).pack(side="left");self.connect_btn=self.button(top,"UART接続",self.toggle_serial,bg=BLUE);self.connect_btn.pack(side="left",padx=6);self.button(top,"設定",self.settings_dialog).pack(side="right");self.button(top,"使い方",self.show_main_help,bg=HELP_BLUE).pack(side="right",padx=6)
+        self.estop_btn=self.button(top,"緊急停止",self.activate_emergency_stop,bg="#c62828",padx=18,pady=9);self.estop_btn.pack(side="right",padx=12)
+        self.estop_banner=self.label(self.root,"",bg=BG,fg="white",font=("Yu Gothic UI",14,"bold"),anchor="center")
+        status=self.frame(self.root);status.pack(fill="x",padx=14,pady=4);self.status_widgets={}
+        for key,title in (("pc","PC ↔ 統括・モーター"),("light","統括 ↔ ライト")):
+            c=self.frame(status,bg=CARD);c.pack(side="left",fill="x",expand=True,padx=5,pady=6);led=Led(c,18);led.pack(side="left",padx=12,pady=10);v=self.label(c,title,bg=CARD,font=("Yu Gothic UI",11,"bold"));v.pack(anchor="w",pady=(6,0));age=self.label(c,"最終通信: --",bg=CARD,fg=MUTED,font=("Yu Gothic UI",8));age.pack(anchor="w",pady=(0,6));self.status_widgets[key]=(c,led,v,age)
+        self.workspace=tk.PanedWindow(self.root,orient="vertical",bg="#27364a",sashwidth=7,sashrelief="flat",borderwidth=0);self.workspace.pack(fill="both",expand=True,padx=14,pady=(0,12))
+        viewport=self.frame(self.workspace,bg=BG);viewport.rowconfigure(0,weight=1);viewport.columnconfigure(0,weight=1)
+        self.body_canvas=tk.Canvas(viewport,bg=BG,highlightthickness=0)
+        self.body_canvas.grid(row=0,column=0,sticky="nsew")
+        ttk.Scrollbar(viewport,orient="vertical",command=self.body_canvas.yview,style="Dark.Vertical.TScrollbar").grid(row=0,column=1,sticky="ns")
+        ttk.Scrollbar(viewport,orient="horizontal",command=self.body_canvas.xview,style="Dark.Horizontal.TScrollbar").grid(row=1,column=0,sticky="ew")
+        for child in viewport.winfo_children():
+            if isinstance(child,ttk.Scrollbar):
+                if child.cget("orient")=="vertical":self.body_canvas.configure(yscrollcommand=child.set)
+                else:self.body_canvas.configure(xscrollcommand=child.set)
+        body=self.frame(self.body_canvas,bg=BG);window=self.body_canvas.create_window(0,0,window=body,anchor="nw")
+        def resize_body(event):
+            self.body_canvas.itemconfigure(window,width=max(1500,event.width),height=max(720,event.height))
+            self.body_canvas.configure(scrollregion=self.body_canvas.bbox("all"))
+        self.body_canvas.bind("<Configure>",resize_body)
+        body.bind("<Configure>",lambda _e:self.body_canvas.configure(scrollregion=self.body_canvas.bbox("all")))
+        left=self.frame(body);left.pack(side="left",fill="both",expand=True,padx=(0,5));right=self.frame(body);right.pack(side="right",fill="both",expand=True,padx=(5,0));log_area=self.frame(self.workspace,bg=BG)
+        self.workspace.add(viewport,minsize=160,stretch="always");self.workspace.add(log_area,minsize=70,stretch="never");self.build_values(left);self.build_audio(right);self.build_log(log_area);self.root.after_idle(lambda:self.workspace.sash_place(0,0,max(160,self.workspace.winfo_height()-130)))
+        self.button(top,"全STEPを別窓",self.open_step_window,bg=HELP_BLUE,padx=5).pack(side="left")
+    def open_step_window(self):
+        existing=getattr(self,"step_window",None)
+        if existing and existing.winfo_exists():existing.lift();return
+        w=tk.Toplevel(self.root);self.step_window=w;w.title("全STEP一覧 — 20261004");w.configure(bg=BG);w.geometry(f"{min(1200,w.winfo_screenwidth()-60)}x{min(650,w.winfo_screenheight()-100)}");w.minsize(500,250)
+        self.label(w,"全STEP一覧：ダブルクリックで移動（メイン画面の移動ON/OFF設定に従います）",fg=MUTED).pack(anchor="w",padx=12,pady=8)
+        table=self.frame(w);table.pack(fill="both",expand=True,padx=10,pady=(0,10));table.rowconfigure(0,weight=1);table.columnconfigure(0,weight=1)
+        tree=ttk.Treeview(table,columns=("step","time",*FIELDS),show="headings",style="Dark.Treeview",selectmode="browse");tree.grid(row=0,column=0,sticky="nsew")
+        for key in ("step","time",*FIELDS):
+            tree.heading(key,text="STEP" if key=="step" else "秒" if key=="time" else LABELS[key]);tree.column(key,width=95,anchor="center",stretch=False)
+        sy=ttk.Scrollbar(table,orient="vertical",command=tree.yview,style="Dark.Vertical.TScrollbar");sy.grid(row=0,column=1,sticky="ns");sx=ttk.Scrollbar(table,orient="horizontal",command=tree.xview,style="Dark.Horizontal.TScrollbar");sx.grid(row=1,column=0,sticky="ew");tree.configure(yscrollcommand=sy.set,xscrollcommand=sx.set)
+        tree.tag_configure("current",background="#34475a")
+        tree.bind("<Double-1>",lambda e:self.jump_to_step(int(tree.identify_row(e.y))) if tree.identify_row(e.y) else None)
+        def refresh():
+            if not w.winfo_exists():return
+            signature=repr(self.timeline)
+            if signature!=getattr(tree,"_signature",None):
+                tree._signature=signature;tree.delete(*tree.get_children())
+                for i,r in enumerate(self.timeline):tree.insert("","end",iid=str(i),values=[f"STEP{i+1}",f'{r["time"]:.1f}',*[f'{r[k]:.2f}' if k in ("angle","speed") else "ON" if r[k] else "OFF" for k in FIELDS]])
+            current=bisect.bisect_right(self.timeline_times,self.position())-1
+            if current!=getattr(tree,"_current",None):
+                old=getattr(tree,"_current",-1)
+                if tree.exists(str(old)):tree.item(str(old),tags=())
+                if tree.exists(str(current)):tree.item(str(current),tags=("current",));tree.see(str(current))
+                tree._current=current
+            w.after(200,refresh)
+        refresh()
+    def build_values(self,parent):
+        h=self.frame(parent);h.pack(fill="x",padx=8,pady=8);self.label(h,"制御値 / 反映状態",font=("Yu Gothic UI",13,"bold")).pack(side="left");self.origin_status=self.label(h,"原点未設定：モーター移動禁止",bg="#54202a",fg="#ffb6bd",font=("Yu Gothic UI",10,"bold"));self.origin_status.pack(side="left",padx=12,ipadx=8,ipady=3);self.button(h,"今すぐ全設定を送信",lambda:self.send(True),bg=BLUE).pack(side="right");self.button(h,"モーター0°位置設定",self.open_motor_calibration,bg=ORANGE).pack(side="right",padx=6);self.button(h,"0°へ戻す",self.open_motor_calibration,bg="#337a95").pack(side="right",padx=2)
+        self.label(parent,"※ 目標角度 999＝時計回り無限回転、-999＝反時計回り無限回転",fg="#9ec7ef",font=("Yu Gothic UI",8)).pack(anchor="w",padx=12)
+        tools=self.frame(parent);tools.pack(fill="x",padx=8,pady=(0,3))
+        self.all_lights_btn=self.button(tools,"一等星・恒星・全星座：OFF",self.toggle_all_lights,bg="#7a3340",pady=3);self.all_lights_btn.pack(side="left",padx=3)
+        self.light_overrides_btn=self.button(tools,"ライト一括上書き：OFF（ON/OFF切替）",self.toggle_light_overrides,bg="#42546a",pady=3);self.light_overrides_btn.pack(side="left",padx=3)
+        motor_tools=self.frame(parent);motor_tools.pack(fill="x",padx=8,pady=(0,3))
+        self.button(motor_tools,"モーター手動操作",self.open_manual_motor_window,bg="#365c8a",pady=3).pack(side="left",padx=3)
+        self.manual_motor_label=self.label(motor_tools,"",fg="#ffd789",font=("Yu Gothic UI",9,"bold"));self.manual_motor_label.pack(side="left",padx=8)
+        grid=self.frame(parent);grid.pack(fill="both",expand=True,padx=8)
+        for col,t in enumerate(("系統","要求設定値","実機現在値","反映","上書き","手動値")):self.label(grid,t,fg=MUTED).grid(row=0,column=col,sticky="ew",padx=5,pady=4)
+        grid.columnconfigure(0,weight=2);grid.columnconfigure(1,weight=1);grid.columnconfigure(2,weight=1);grid.columnconfigure(5,weight=1)
+        for row,k in enumerate(FIELDS,1):
+            box=self.frame(grid,bg=CARD);box.grid(row=row,column=0,columnspan=6,sticky="nsew",pady=2);box.lower()
+            name=self.label(grid,LABELS[k],bg=CARD);name.grid(row=row,column=0,sticky="w",padx=10,pady=6)
+            req=tk.StringVar(value="--");act=tk.StringVar(value="--");req_label=self.label(grid,textvariable=req,bg=CARD);req_label.grid(row=row,column=1);act_label=self.label(grid,textvariable=act,bg=CARD);act_label.grid(row=row,column=2)
+            led=Led(grid);led.configure(bg=CARD);led.grid(row=row,column=3)
+            cb=tk.Checkbutton(grid,variable=self.override[k],command=self.on_override,bg=CARD,activebackground=CARD,selectcolor=PANEL,fg=TEXT);cb.grid(row=row,column=4)
+            control=None
+            if k in ("angle","speed"):control=tk.Entry(grid,textvariable=self.manual[k],width=10,bg="#0e151e",fg=TEXT,insertbackground=TEXT,relief="flat");control.bind("<Return>",lambda e:self.manual_changed());control.grid(row=row,column=5,padx=7)
+            else:
+                control=self.button(grid,"OFF",lambda key=k:self.toggle_manual(key),pady=2);control.grid(row=row,column=5);self.manual[k].trace_add("write",lambda *_args,key=k,btn=control:btn.config(text=self.manual[key].get()))
+            if k in UNCONNECTED_FIELDS:
+                self.override[k].set(False);self.manual[k].set("OFF");cb.config(state="disabled");control.config(state="disabled",fg=MUTED);name.config(fg=MUTED)
+            self.vars[k]={"req":req,"act":act,"led":led,"box":box,"name":name,"req_label":req_label,"act_label":act_label,"check":cb,"control":control}
+    def build_audio(self,parent):
+        h=self.frame(parent);h.pack(fill="x",padx=8,pady=8);self.label(h,"音声・タイムライン",font=("Yu Gothic UI",13,"bold")).pack(side="left");self.button(h,"指示送信設定",self.timeline_editor).pack(side="right")
+        files=self.frame(parent,bg=CARD);files.pack(fill="x",padx=8,pady=3);info=self.frame(files,bg=CARD);info.pack(side="left",fill="x",expand=True,padx=8,pady=4);self.audio_label=self.label(info,"音声: 未選択",bg=CARD,fg=MUTED,anchor="w");self.audio_label.pack(anchor="w");self.speaker_label=self.label(info,"出力スピーカー: "+self.output_device,bg=CARD,fg="#9ec7ef",anchor="w",font=("Yu Gothic UI",8));self.speaker_label.pack(anchor="w");self.button(files,"音声選択",self.choose_audio).pack(side="right",padx=3,pady=5);self.button(files,"TXT読込",self.choose_timeline).pack(side="right",padx=3);self.button(files,"↻ 最初から再生",self.restart_from_beginning,padx=7,bg=RED).pack(side="right",padx=3)
+        self.next_label=self.label(parent,"次の変更: --",fg="#ffd38a",anchor="w",justify="left");self.next_label.pack(fill="x",padx=12,pady=7)
+        self.pos=tk.DoubleVar();self.scale=ttk.Scale(parent,from_=0,to=1,variable=self.pos,command=self.seek_preview);self.scale.pack(fill="x",padx=12);self.scale.bind("<ButtonPress-1>",self.begin_scrub);self.scale.bind("<ButtonRelease-1>",self.end_scrub);self.time_label=self.label(parent,"00:00.00 / 00:00.00");self.time_label.pack()
+        controls=self.frame(parent);controls.pack(fill="x",padx=8,pady=8);self.play_btn=self.button(controls,"▶  再生",self.toggle_play,bg=GREEN);self.play_btn.pack(side="left",ipadx=14,ipady=10);self.button(controls,"◀ 前のステップ",lambda:self.jump_event(-1),padx=6).pack(side="left",padx=2);self.button(controls,"次のステップ ▶",lambda:self.jump_event(1),padx=6).pack(side="left",padx=2)
+        self.rate_var=tk.StringVar(value="1.0x");rates=ttk.Combobox(controls,textvariable=self.rate_var,values=["0.5x","0.75x","1.0x","1.25x","1.5x","2.0x"],width=5,state="readonly");rates.pack(side="left",padx=3);rates.bind("<<ComboboxSelected>>",self.change_rate);self.jump_var=tk.StringVar(value="0");tk.Entry(controls,textvariable=self.jump_var,width=6,bg="#0e151e",fg=TEXT,insertbackground=TEXT,relief="flat").pack(side="left",padx=(3,1),ipady=5);self.button(controls,"指定秒へ",self.jump_seconds,padx=5).pack(side="left",padx=1);self.end_label=self.label(controls,"残り -- / 予定 --",fg=MUTED,font=("Yu Gothic UI",8));self.end_label.pack(side="right",padx=4)
+        auto=self.frame(parent,bg=CARD);auto.pack(fill="x",padx=8,pady=6);self.auto_cb=tk.Checkbutton(auto,text="再生時間による設定値自動変更",variable=self.auto,command=self.auto_changed,bg=CARD,fg=TEXT,activebackground=CARD,activeforeground=TEXT,selectcolor=PANEL,font=("Yu Gothic UI",10,"bold"));self.auto_cb.pack(side="left",padx=8,pady=8)
+        overview=self.frame(parent,bg=CARD);overview.pack(fill="both",expand=True,padx=8,pady=(3,8));ov_head=self.frame(overview,bg=CARD);ov_head.pack(fill="x",padx=8,pady=(6,3));self.label(ov_head,"全STEP一覧",bg=CARD,font=("Yu Gothic UI",10,"bold")).pack(side="left");self.label(ov_head,"±999＝無限回転（速度の正負で方向指定）",bg=CARD,fg="#9ec7ef",font=("Yu Gothic UI",8)).pack(side="left",padx=12);self.step_jump_btn=self.button(ov_head,"ダブルクリック移動: ON",self.toggle_step_jump,bg="#265f43",pady=2);self.step_jump_btn.pack(side="right")
+        table=self.frame(overview,bg=CARD);table.pack(fill="both",expand=True,padx=7,pady=(0,7));cols=("step","time")+tuple(FIELDS);self.step_tree=ttk.Treeview(table,columns=cols,show="headings",height=7,selectmode="none",style="Dark.Treeview")
+        for c in cols:
+            title="STEP" if c=="step" else "秒" if c=="time" else LABELS[c].replace(" (°)","").replace(" (°/s)","");self.step_tree.heading(c,text=title);self.step_tree.column(c,width=68 if c not in ("angle","speed") else 90,anchor="center",stretch=False)
+        sy=ttk.Scrollbar(table,orient="vertical",command=self.scroll_step_y,style="Dark.Vertical.TScrollbar");sx=ttk.Scrollbar(table,orient="horizontal",command=self.scroll_step_x,style="Dark.Horizontal.TScrollbar");self.step_tree.configure(yscrollcommand=sy.set,xscrollcommand=sx.set);self.step_tree.grid(row=0,column=0,sticky="nsew");sy.grid(row=0,column=1,sticky="ns");sx.grid(row=1,column=0,sticky="ew");table.rowconfigure(0,weight=1);table.columnconfigure(0,weight=1);self.step_tree.tag_configure("current",background="#34475a",foreground="#ffffff");self.step_tree.bind("<Double-1>",self.on_step_double_click);self.step_tree.bind("<MouseWheel>",self.on_step_mousewheel);self.step_tree.bind("<Configure>",lambda _e:self.schedule_step_value_colors())
+    def build_log(self,parent):
+        f=self.frame(parent);f.pack(fill="both",expand=True);head=self.frame(f);head.pack(fill="x",padx=8);self.label(head,"通信イベントログ",font=("Yu Gothic UI",11,"bold")).pack(side="left");self.label(head,"上の境界線をドラッグして高さ調整",fg=MUTED,font=("Yu Gothic UI",8)).pack(side="right");panes=self.frame(f);panes.pack(fill="both",expand=True,padx=8,pady=(2,8));self.logboxes={}
+        for key,title in (("uart","PC ↔ 統括マイコン（UART）"),("mcu","統括マイコン ↔ 制御マイコン（ESP-NOW）")):
+            pane=self.frame(panes,bg=CARD);pane.pack(side="left",fill="both",expand=True,padx=(0,4) if key=="uart" else (4,0));self.label(pane,title,bg=CARD,fg=MUTED,font=("Yu Gothic UI",9,"bold")).pack(anchor="w",padx=7,pady=(5,2));body=self.frame(pane,bg=CARD);body.pack(fill="both",expand=True,padx=5,pady=(0,5));box=tk.Text(body,height=7,bg="#080c11",fg="#b9c7d8",insertbackground=TEXT,relief="flat",font=("Consolas",9),wrap="word");scroll=ttk.Scrollbar(body,orient="vertical",command=box.yview);box.configure(yscrollcommand=scroll.set);box.pack(side="left",fill="both",expand=True);scroll.pack(side="right",fill="y");self.logboxes[key]=box
+    def log(self,msg,channel="uart"):
+        box=self.logboxes.get(channel,self.logboxes["uart"]);box.insert("end",f"[{datetime.now():%Y-%m-%d %H:%M:%S}] [再生 {fmt_time(self.position())}] {msg}\n");box.see("end")
+    def restore(self):
+        self.refresh_ports()
+        for kind,fn in (("audio",self.load_audio),("timeline",self.load_timeline_file)):
+            p=self.cfg.get(kind,"")
+            bundle=Path(sys.executable).parent if getattr(sys,"frozen",False) else Path(__file__).resolve().parent.parent/"操作者用"
+            name=Path(p).name if p else ("2024番組_指示送信設定.txt" if kind=="timeline" else "2024番組_統合音声.wav")
+            local=bundle/name
+            if local.exists():p=str(local)
+            if p and Path(p).exists():
+                try:fn(p)
+                except Exception as e:self.log(f"前回の{kind}を読めません: {e}")
+        if not self.timeline:
+            p=Path(__file__).with_name("sample_timeline.txt")
+            if p.exists():self.load_timeline_file(str(p))
+    def refresh_ports(self):
+        ports=list(list_ports.comports()) if serial else []
+        self.port_choices={f"{p.device} — {p.description}":p.device for p in ports};self.portbox["values"]=list(self.port_choices)
+        if self.ser:return
+        remembered=self.reconnect_device()
+        selected=next((label for label,device in self.port_choices.items() if device==remembered),"")
+        self.port.set(selected)
+        if self.port_scan_active:return
+        self.port_scan_active=True
+        def scan():
+            found=[]
+            for p in sorted(ports,key=lambda p:p.device!=remembered):
+                if p.vid is None and p.device!=remembered:continue
+                try:
+                    with serial.Serial(p.device,115200,timeout=.15,write_timeout=.3) as connection:
+                        if self.verify_coordinator(connection):found.append(p.device)
+                except Exception:pass
+            self.rx.put({"type":"port_scan","ports":found})
+        threading.Thread(target=scan,daemon=True).start()
+    def verify_coordinator(self,connection):
+        connection.write(b'{"cmd":"identify"}\n')
+        deadline=time.monotonic()+1.5;buffer=b""
+        while time.monotonic()<deadline:
+            buffer+=connection.read(max(1,connection.in_waiting))
+            while b"\n" in buffer:
+                line,buffer=buffer.split(b"\n",1)
+                try:
+                    data=json.loads(line)
+                    if data.get("type")=="hello" and data.get("device")=="coordinator_motor":return True
+                    if data.get("type")=="status" and "motor_origin_set" in data and "pc_safety_stop" in data:return True
+                except (ValueError,UnicodeError):pass
+        return False
+    def port_identity(self,device):
+        if not serial:return {"device":device}
+        for p in list_ports.comports():
+            if p.device==device:
+                return {"device":p.device,"serial_number":p.serial_number,"vid":p.vid,"pid":p.pid}
+        return {"device":device}
+    def reconnect_device(self):
+        if not serial or not self.reconnect_port_identity:return ""
+        identity=self.reconnect_port_identity;ports=list(list_ports.comports())
+        serial_number=identity.get("serial_number")
+        if serial_number:
+            for p in ports:
+                if p.serial_number==serial_number:return p.device
+        for p in ports:
+            if p.device==identity.get("device"):return p.device
+        same_type=[p.device for p in ports if identity.get("vid") is not None and p.vid==identity.get("vid") and p.pid==identity.get("pid")]
+        return same_type[0] if len(same_type)==1 else ""
+    def close_serial(self,connection=None):
+        target=connection or self.ser
+        if connection is not None and self.ser is not connection:return
+        self.ser=None
+        self.manual_motor_armed=False
+        if target:
+            try:target.close()
+            except Exception:pass
+    def connect_serial(self,device,automatic=False):
+        if not serial or not device:return False
+        try:
+            connection=serial.Serial(device,115200,timeout=.2,write_timeout=.5)
+            if not self.verify_coordinator(connection):
+                connection.close();raise ValueError("統括・モーター基板の応答を確認できません。別のCOMポートを選択してください。")
+            try:
+                connection.reset_input_buffer()
+                connection.reset_output_buffer()
+            except Exception:pass
+            self.ser=connection;self.port.set(next((label for label,value in self.port_choices.items() if value==device),device));self.last_pc=None;self.uart_health="waiting";self.uart_connected_at=time.monotonic()
+            if not automatic:self.reconnect_port_identity=self.port_identity(device)
+            self.cfg["serial_identity"]=self.reconnect_port_identity;self.save_cfg()
+            self.auto_reconnect_enabled=True;self.next_reconnect_at=0.0
+            threading.Thread(target=self.reader,args=(connection,),daemon=True).start()
+            self.connect_btn.config(text="切断（自動再接続ON）",bg=RED)
+            self.log(("UART自動再接続 " if automatic else "UART接続 ")+device)
+            self.configure_mcu();self.last_sent=None;self.send(True)
+            return True
+        except Exception as e:
+            self.close_serial()
+            self.uart_health="reconnecting" if self.auto_reconnect_enabled else "disconnected"
+            if not automatic:
+                self.log(f"UART接続失敗 {device}: {e}")
+                messagebox.showerror("接続エラー",str(e))
+            return False
+    def toggle_serial(self):
+        if self.ser or self.auto_reconnect_enabled:
+            self.auto_reconnect_enabled=False;self.close_serial();self.uart_health="disconnected";self.uart_connected_at=None;self.connect_btn.config(text="UART接続",bg=BLUE);self.log("UARTを切断（自動再接続OFF）")
+        else:self.connect_serial(self.port_choices.get(self.port.get(),self.port.get()))
+    def reader(self,connection):
+        buffer=b""
+        while connection.is_open:
+            try:
+                buffer+=connection.read(max(1,connection.in_waiting))
+                if len(buffer)>65536:buffer=b""
+                while b"\n" in buffer:
+                    raw,buffer=buffer.split(b"\n",1);s=raw.decode("utf-8","replace").strip()
+                    if not s:continue
+                    try:self.rx.put(json.loads(s))
+                    except json.JSONDecodeError:self.rx.put({"type":"bad_line","line":s[:160]})
+            except Exception as e:self.rx.put({"type":"serial_error","error":str(e),"connection":connection});break
+    def write(self,obj):
+        connection=self.ser
+        if not connection or not connection.is_open:return False
+        try:
+            payload=(json.dumps(obj,separators=(",",":"))+"\n").encode()
+            with self.serial_write_lock:
+                if connection is not self.ser or not connection.is_open:return False
+                connection.write(payload)
+            return True
+        except Exception as e:
+            self.log(f"UART送信失敗: {e}");self.rx.put({"type":"serial_error","error":str(e),"connection":connection});return False
+    def configure_mcu(self):
+        pc_timeout=3000
+        self.write({"cmd":"config","esp_interval_ms":int(self.cfg["esp_interval"]*1000),"retry_timeout_ms":int(self.cfg["retry_timeout"]*1000),"max_retries":int(self.cfg["max_retries"]),"pc_timeout_ms":pc_timeout})
+        # 既存基板の固定ピン割り当てを使用。ピン変更指令は送信しない。
+    def effective(self):
+        d=dict(self.desired)
+        for k in FIELDS:
+            if self.manual_motor_mode and k in ("angle","speed"):continue
+            if self.override[k].get():d[k]=float(self.manual[k].get()) if k in ("angle","speed") else as_bool(self.manual[k].get())
+        if abs(abs(d["angle"])-999.0)>=.01:d["angle"]=d["angle"]%360.0
+        for key in UNCONNECTED_FIELDS:d[key]=False
+        if self.motor_playback_stopped:d["speed"]=0.0
+        if self.manual_motor_mode:
+            d["angle"]=float(self.actual["angle"])%360.0
+            d["speed"]=0.0
+        return d
+    def send(self,force=False,fade=False):
+        if self.emergency_stop:return
+        try:d=self.effective()
+        except ValueError:self.log("手動値が数値ではありません");return
+        if not force and d==self.last_sent:return
+        if self.write({"cmd":"set","motor":{"angle":d["angle"],"speed":d["speed"]},"light":{"first":d["first"],"stars":d["stars"],"patterns":[d[f"p{i}"] for i in range(1,9)],"fade":bool(fade),"fade_duration_ms":round(self.cfg["fade_seconds"]*1000)}}):self.last_sent=d
+        self.update_values()
+    def activate_emergency_stop(self):
+        if self.emergency_stop:
+            self.release_emergency_stop();return
+        self.emergency_stop=True;self.manual_motor_armed=False;self.update_emergency_stop_display()
+        sent=self.write({"cmd":"emergency_stop"})
+        self.log("緊急停止を実行：モーター停止、全ライトOFF")
+        if not sent:messagebox.showerror("緊急停止通信エラー","緊急停止指令をUARTへ送信できませんでした。直ちに24V電源を切ってください。")
+    def release_emergency_stop(self):
+        if not messagebox.askyesno("緊急停止を解除","周囲の安全を確認しましたか？\n緊急停止を解除すると、現在の設定値が再送信されます。"):
+            return
+        if not self.write({"cmd":"emergency_stop_release"}):
+            messagebox.showerror("解除できません","統括・モーター基板と通信できません。緊急停止は解除されていません。");return
+        self.emergency_stop=False;self.update_emergency_stop_display();self.root.after(150,lambda:self.send(True));self.log("緊急停止を解除")
+    def update_emergency_stop_display(self):
+        if self.emergency_stop:
+            self.estop_btn.config(text="緊急停止解除",bg="#ef6c00")
+            self.estop_banner.config(text="⚠ 緊急停止中：モーター停止・全ライトOFF　安全確認後に『緊急停止解除』を押してください",bg="#b71c1c")
+            if not self.estop_banner.winfo_manager():self.estop_banner.pack(fill="x",padx=14,pady=(0,6),ipady=9,before=self.workspace)
+        else:
+            self.estop_btn.config(text="緊急停止",bg="#c62828")
+            if self.estop_banner.winfo_manager():self.estop_banner.pack_forget()
+    def process(self,d):
+        t=d.get("type")
+        if t=="port_scan":
+            self.port_scan_active=False
+            if self.ser:return
+            found=d.get("ports",[])
+            if found:
+                preferred=self.reconnect_device();device=preferred if preferred in found else found[0]
+                self.port.set(next((label for label,value in self.port_choices.items() if value==device),device));self.log("統括基板を検出: "+", ".join(found))
+            else:self.log("統括基板の自動検出なし。機器名を確認してCOMポートを手動選択してください")
+            return
+        if t in ("event","status","hello","pong"):self.last_pc=time.monotonic()
+        if t=="event":self.log(f'{d.get("device","")} {d.get("event","")}',"mcu")
+        elif t=="status":
+            self.last_motor_status=time.monotonic()
+            reported_estop=bool(d.get("emergency_stop",False))
+            if reported_estop!=self.emergency_stop:self.emergency_stop=reported_estop;self.update_emergency_stop_display()
+            self.motor_calibration_mode=bool(d.get("motor_calibration_mode",False));self.motor_origin_set=bool(d.get("motor_origin_set",False))
+            self.manual_motor_armed=bool(self.manual_motor_mode and self.motor_calibration_mode and self.motor_origin_set and not self.emergency_stop and not d.get("pc_safety_stop",False))
+            self.mcu_uptime["pc"]=float(d.get("uptime_ms",0))/1000.0;self.mcu_uptime["light"]=float(d.get("light",{}).get("uptime_ms",0))/1000.0
+            for k in ("motor","light"):
+                x=d.get(k,{});self.links[k].update(online=x.get("online",False),unstable=x.get("unstable",False));remote=x.get("last_ack_ms",0)
+                if remote and remote!=self.links[k]["remote_ack"]:self.links[k]["remote_ack"]=remote;self.links[k]["last"]=time.monotonic()
+            a=d.get("actual",{});m=a.get("motor",{});l=a.get("light",{});self.actual["angle"]=m.get("angle",self.actual["angle"]);self.actual["speed"]=m.get("speed",self.actual["speed"]);self.motor_motion=m.get("motion",self.motor_motion);self.motor_target_angle=float(m.get("target_angle",self.motor_target_angle));self.actual["first"]=bool(l.get("first",self.actual["first"]));self.actual["stars"]=bool(l.get("stars",self.actual["stars"]));mask=l.get("patterns",0)
+            for i in range(1,9):self.actual[f"p{i}"]=bool(mask&(1<<(i-1)))
+        elif t=="bad_line":self.log("UART受信失敗（不正なデータ）: "+d.get("line",""))
+        elif t=="serial_error":
+            connection=d.get("connection")
+            if connection is self.ser:
+                self.log("UART通信切断: "+d.get("error",""));self.close_serial(connection);self.last_pc=None;self.uart_health="reconnecting" if self.auto_reconnect_enabled else "failed";self.next_reconnect_at=0.0
+                if self.auto_reconnect_enabled:self.connect_btn.config(text="自動再接続を停止",bg=ORANGE)
+    def position(self):
+        if self.playing:return min(self.duration,self.seek_base+(time.monotonic()-self.play_origin)*self.rate)
+        return self.seek_base
+    def toggle_play(self):
+        if not self.audio:return messagebox.showwarning("音声未選択","音声ファイルを選択してください")
+        if self.playing:self.pause()
+        else:self.play()
+    def restart_from_beginning(self):
+        if not self.audio:return messagebox.showwarning("音声未選択","音声ファイルを選択してください")
+        if not messagebox.askyesno("最初から再生","再生位置を0秒へ戻して、最初から再生しますか？"):return
+        if self.playing:self.pause()
+        choice=messagebox.askyesnocancel("モーターを0°へ戻す","モーターを反時計回りに5°/sで0°へ戻しますか？\n360°側へ進まず、現在角度から戻ります。\nはい：戻してから再生／いいえ：現在位置で再生／キャンセル：中止")
+        if choice is None:return
+        if choice:
+            if not self.can_transfer_motor():return
+            self.override["angle"].set(False);self.override["speed"].set(False)
+            self.motor_transfer=MotorTransferWindow(self,-(float(self.actual["angle"])%360),0,True)
+            return
+        self.seek_base=0;self.pos.set(0);self.apply_timeline(0,force=True);self.play();self.log("音声を最初から再生")
+    def play(self):
+        if self.motor_transfer:return messagebox.showwarning("モーター移動中","移動画面で完了またはキャンセルしてから再生してください")
+        if self.emergency_stop:return messagebox.showwarning("緊急停止中","緊急停止を解除してから再生してください")
+        if (self.motor_calibration_mode and not self.manual_motor_mode) or (self.calibration_window and self.calibration_window.w.winfo_exists()):return messagebox.showwarning("校正中","モーター0°設定を終了してから再生してください")
+        try:
+            playback_file=self.rate_audio_path();pygame.mixer.music.load(playback_file);pygame.mixer.music.play(start=self.seek_base/self.rate);self.play_origin=time.monotonic();self.playing=True;self.motor_playback_stopped=False;self.play_btn.config(text="Ⅱ  一時停止",bg=ORANGE);self.apply_timeline(self.seek_base,True);self.send(True)
+        except Exception as e:
+            self.pause();messagebox.showerror("再生エラー",str(e))
+    def pause(self):
+        self.seek_base=self.position();self.playing=False;self.motor_playback_stopped=True
+        if self.manual_motor_mode and getattr(self,"ser",None) and getattr(self.ser,"is_open",False):self.send_motor_calibration("stop")
+        try:pygame.mixer.music.stop()
+        finally:
+            self.play_btn.config(text="▶  再生",bg=GREEN)
+            # 手動入力が不正でも、最後のライト状態を維持して停止指令を送る。
+            d=dict(self.last_sent or self.actual);d["speed"]=0.0
+            if self.write({"cmd":"set","motor":{"angle":float(self.actual["angle"]),"speed":0.0},"light":{"first":d["first"],"stars":d["stars"],"patterns":[d[f"p{i}"] for i in range(1,9)],"fade":False}}):self.last_sent=None
+            self.update_values()
+    def can_transfer_motor(self):
+        if self.motor_transfer or (self.calibration_window and self.calibration_window.w.winfo_exists()):
+            messagebox.showwarning("モーター操作中","現在のモーター操作を終了してください。",parent=self.root);return False
+        if self.emergency_stop or self.manual_motor_mode or self.motor_calibration_mode or not self.motor_origin_set or not self.actual_link_ok("motor"):
+            messagebox.showwarning("モーター移動不可","通信・原点設定を確認し、手動モードや0°設定を終了してください。",parent=self.root);return False
+        return True
+    def seek(self,x,align_motor=True):
+        if self.motor_transfer:return
+        previous=self.position()
+        was=self.playing
+        if was:self.pause()
+        self.seek_base=max(0,min(self.duration,float(x)));self.pos.set(self.seek_base)
+        self.apply_timeline(self.seek_base,force=True)
+        if align_motor and self.timeline and self.auto.get() and not self.override["angle"].get() and not self.override["speed"].get() and not self.manual_motor_mode and self.motor_origin_set and self.actual_link_ok("motor") and not self.emergency_stop and not self.motor_calibration_mode:
+            before=timeline_motor_position(self.timeline,previous);after=timeline_motor_position(self.timeline,self.seek_base)
+            actual=before+((float(self.actual["angle"])-before+180)%360-180)
+            delta=after-actual
+            if abs(delta)>.15:
+                self.motor_transfer=MotorTransferWindow(self,delta,self.seek_base,was);return
+        if was:self.play()
+    def seek_preview(self,v):
+        if not self.playing:self.seek_base=float(v)
+    def begin_scrub(self,_event=None):
+        self.scrub_was_playing=self.playing
+        if self.playing:self.pause()
+    def end_scrub(self,_event=None):
+        target=float(self.pos.get());resume=self.scrub_was_playing;self.scrub_was_playing=False;self.seek(target)
+        if self.motor_transfer:self.motor_transfer.resume=resume
+        elif resume and self.audio:self.play()
+    def jump_seconds(self):
+        try:self.seek(float(self.jump_var.get()))
+        except ValueError:messagebox.showerror("入力エラー","秒数を数値で入力してください")
+    def jump_event(self,direction):
+        if not self.timeline:return
+        now=time.monotonic();p=self.position()
+        if self.nav_step_index is not None and now-self.nav_step_at<1.5:index=self.nav_step_index
+        else:
+            index=-1
+            for i,r in enumerate(self.timeline):
+                if r["time"]<=p+.02:index=i
+                else:break
+        target=index+(-1 if direction<0 else 1);target=max(0,min(len(self.timeline)-1,target))
+        if target!=index or direction<0:self.seek(self.timeline[target]["time"])
+        self.nav_step_index=target;self.nav_step_at=time.monotonic()
+    def choose_audio(self):
+        p=filedialog.askopenfilename(filetypes=[("音声","*.mp3 *.wav *.ogg"),("すべて","*.*")]);
+        if p:self.load_audio(p);self.save_cfg()
+    def load_audio(self,p):
+        if pygame is None:raise RuntimeError("pygameがありません")
+        if not pygame.mixer.get_init():pygame.mixer.init()
+        snd=pygame.mixer.Sound(p);self.duration=snd.get_length();self.audio=p;self.scale.config(to=max(1,self.duration));self.audio_label.config(text="音声: "+Path(p).name)
+    def choose_timeline(self):
+        p=filedialog.askopenfilename(filetypes=[("タイムラインTXT","*.txt"),("すべて","*.*")]);
+        if p:
+            try:self.load_timeline_file(p);self.save_cfg()
+            except Exception as e:messagebox.showerror("読込エラー",str(e))
+    def load_timeline_file(self,p):self.timeline=load_timeline(p);self.timeline_path=p;self.log(f"タイムライン読込: {p}");self.refresh_step_overview();self.apply_timeline(self.position(),True)
+    def refresh_step_overview(self):
+        if not hasattr(self,"step_tree"):return
+        self.timeline_times=[r["time"] for r in self.timeline]
+        self.clear_step_value_colors()
+        self.step_tree.delete(*self.step_tree.get_children())
+        for i,r in enumerate(self.timeline):self.step_tree.insert("","end",iid=f"step_{i}",values=[f"STEP{i+1}",f'{r["time"]:.1f}',f'{r["angle"]:.2f}',f'{r["speed"]:.2f}',*("" for _k in FIELDS[2:])])
+        self.schedule_step_value_colors()
+    def clear_step_value_colors(self):
+        for label in self.step_value_labels:
+            try:label.destroy()
+            except tk.TclError:pass
+        self.step_value_labels=[]
+    def schedule_step_value_colors(self,delay=18):
+        if self.step_color_job:
+            try:self.root.after_cancel(self.step_color_job)
+            except tk.TclError:pass
+        self.step_color_job=self.root.after(delay,self.run_scheduled_step_colors)
+    def run_scheduled_step_colors(self):self.step_color_job=None;self.refresh_step_value_colors()
+    def refresh_step_value_colors(self):
+        if not hasattr(self,"step_tree") or self.refreshing_step_colors:return
+        self.refreshing_step_colors=True
+        try:
+            for label in self.step_value_labels:label.place_forget()
+            self.step_tree.update_idletasks()
+            used=0
+            for i,r in enumerate(self.timeline):
+                iid=f"step_{i}"
+                if not self.step_tree.exists(iid):continue
+                bg="#34475a" if i==self.current_step_shown else "#101821"
+                for key in FIELDS[2:]:
+                    b=self.step_tree.bbox(iid,key)
+                    if not b:continue
+                    x,y,w,h=b;on=bool(r[key])
+                    if used>=len(self.step_value_labels):
+                        label=tk.Label(self.step_tree,font=("Yu Gothic UI",9,"bold"));label.bind("<Double-1>",lambda _e,l=label:self.jump_to_step(l._step_index));label.bind("<MouseWheel>",self.on_step_mousewheel);self.step_value_labels.append(label)
+                    else:label=self.step_value_labels[used]
+                    used+=1;label._step_index=i
+                    label.config(text="ON" if on else "OFF",bg=bg,fg=GREEN if on else RED);label.place(x=x+1,y=y+1,width=max(1,w-2),height=max(1,h-2))
+        finally:self.refreshing_step_colors=False
+    def scroll_step_x(self,*args):self.step_tree.xview(*args);self.schedule_step_value_colors()
+    def scroll_step_y(self,*args):self.step_tree.yview(*args);self.schedule_step_value_colors()
+    def on_step_mousewheel(self,event):
+        self.step_tree.yview_scroll(-1 if event.delta>0 else 1,"units");self.schedule_step_value_colors();return "break"
+    def toggle_step_jump(self):
+        enabled=not self.step_jump_enabled.get();self.step_jump_enabled.set(enabled);self.step_jump_btn.config(text=f'ダブルクリック移動: {"ON" if enabled else "OFF"}',bg="#265f43" if enabled else "#3d4652");self.log("STEPダブルクリック移動: "+("ON" if enabled else "OFF"))
+    def on_step_double_click(self,event):
+        if not self.step_jump_enabled.get():return
+        iid=self.step_tree.identify_row(event.y)
+        if not iid.startswith("step_"):return
+        try:index=int(iid.split("_",1)[1])
+        except ValueError:return
+        self.jump_to_step(index)
+    def jump_to_step(self,index):
+        if not self.step_jump_enabled.get():return
+        try:target=self.timeline[index]["time"]
+        except IndexError:return
+        self.seek(target);self.nav_step_index=index;self.nav_step_at=time.monotonic();self.log(f"STEP{index+1}へ移動 ({target:.3f}秒)")
+    def update_step_highlight(self,p):
+        if not hasattr(self,"step_tree"):return
+        index=bisect.bisect_right(self.timeline_times,p+.001)-1;current=index if index>=0 else None
+        if current==self.current_step_shown:return
+        old=self.current_step_shown;self.current_step_shown=current
+        if old is not None and self.step_tree.exists(f"step_{old}"):self.step_tree.item(f"step_{old}",tags=())
+        if current is not None and self.step_tree.exists(f"step_{current}"):self.step_tree.item(f"step_{current}",tags=("current",));self.step_tree.see(f"step_{current}")
+        self.schedule_step_value_colors()
+    def apply_timeline(self,p,force=False):
+        if not self.timeline or not self.auto.get():return
+        rows=[r for r in self.timeline if r["time"]<=p+.001];r=rows[-1] if rows else self.timeline[0];new={k:r[k] for k in FIELDS}
+        if force or new!=self.desired:self.desired=new;self.send(fade=self.playing and not force)
+    def next_info(self,p):
+        future=[r for r in self.timeline if r["time"]>p+.01]
+        if not future:return "次の変更: なし"
+        n=future[0];cur=self.desired;diff=[]
+        for k in FIELDS:
+            if n[k]!=cur.get(k):diff.append(f'{LABELS[k]}→{n[k] if k in ("angle","speed") else ("ON" if n[k] else "OFF")}')
+        return f'次の変更まで {n["time"]-p:.1f}秒 ({fmt_time(n["time"])})\n' + (" / ".join(diff) or "値の差分なし")
+    def on_override(self):self.send(True);self.update_values()
+    def manual_changed(self):
+        if not self.playing and self.override["speed"].get():self.motor_playback_stopped=False
+        self.send(True)
+    def toggle_manual(self,k):self.manual[k].set("OFF" if as_bool(self.manual[k].get()) else "ON");self.send(True)
+    def all_lights_are_on(self):
+        keys=["first","stars"]+[f"p{i}" for i in range(1,9)]
+        return all(as_bool(self.manual[key].get()) if self.override[key].get() else bool(self.desired[key]) for key in keys)
+    def update_all_lights_button(self):
+        if not hasattr(self,"all_lights_btn"):return
+        on=self.all_lights_are_on();self.all_lights_btn.config(text=f"一等星・恒星・全星座：{'ON' if on else 'OFF'}",bg="#2b7a4b" if on else "#7a3340")
+        keys=["first","stars"]+[f"p{i}" for i in range(1,9)]
+        count=sum(self.override[key].get() for key in keys)
+        state="ON" if count==len(keys) else "一部ON" if count else "OFF"
+        self.light_overrides_btn.config(text=f"ライト一括上書き：{state}（ON/OFF切替）",bg="#665124" if count else "#42546a")
+    def toggle_all_lights(self):
+        turn_on=not self.all_lights_are_on()
+        if self.emergency_stop and turn_on:
+            messagebox.showwarning("緊急停止中","緊急停止を解除するまでライトをONにできません。",parent=self.root);return
+        for key in ["first","stars"]+[f"p{i}" for i in range(1,9)]:
+            self.override[key].set(True);self.manual[key].set("ON" if turn_on else "OFF")
+        self.log(f"手動上書き：一等星・恒星・全星座を{'ON' if turn_on else 'OFF'}")
+        self.send(True);self.update_all_lights_button()
+    def toggle_light_overrides(self):
+        keys=["first","stars"]+[f"p{i}" for i in range(1,9)]
+        turn_on=not all(self.override[key].get() for key in keys)
+        if self.emergency_stop and turn_on:
+            messagebox.showwarning("緊急停止中","緊急停止を解除するまでライトの一括上書きをONにできません。",parent=self.root);return
+        for key in keys:self.override[key].set(turn_on)
+        self.log(f"一等星・恒星・全星座の手動上書き：{'ON' if turn_on else 'OFF'}")
+        self.send(True)
+        self.update_all_lights_button()
+    def open_manual_motor_window(self):
+        if self.manual_motor_window and self.manual_motor_window.w.winfo_exists():
+            self.manual_motor_window.w.lift();return
+        self.manual_motor_window=ManualMotorWindow(self)
+    def start_manual_motor_mode(self):
+        if self.motor_transfer:
+            messagebox.showwarning("位置合わせ中","位置合わせを完了またはキャンセルしてください。",parent=self.root);return False
+        if self.emergency_stop:
+            messagebox.showwarning("緊急停止中","緊急停止を解除してから手動操作してください。",parent=self.root);return False
+        if self.calibration_window and self.calibration_window.w.winfo_exists():
+            messagebox.showwarning("0°設定中","モーター0°位置設定を終了してから手動操作してください。",parent=self.root);return False
+        if not self.actual_link_ok("motor") or not self.motor_origin_set:
+            messagebox.showwarning("操作できません","統括基板との通信と原点設定を確認してください。",parent=self.root);return False
+        if not self.send_motor_calibration("stop"):return False
+        self.manual_motor_mode=True;self.manual_motor_armed=False
+        self.auto.set(True)
+        for key in ["first","stars"]+[f"p{i}" for i in range(1,9)]:self.override[key].set(False)
+        if self.timeline:self.apply_timeline(self.position(),True)
+        else:self.send(True)
+        self.log("モーター手動モード開始：音声・ライト自動制御は継続")
+        self.update_values()
+        return True
+    def move_manual_motor(self,delta,speed):
+        if self.emergency_stop or not self.manual_motor_mode or not self.manual_motor_armed or not self.actual_link_ok("motor") or not self.motor_origin_set:
+            messagebox.showwarning("手動移動できません","通信・原点設定・手動モードを確認してください。再接続後は手動モードを再開してください。",parent=self.root);return False
+        if self.motor_motion!="stopped":
+            messagebox.showwarning("移動中","現在の移動が終わるか、停止ボタンを押してから次の角度を指定してください。",parent=self.root);return False
+        return self.send_motor_calibration("move_relative",speed,delta)
+    def stop_manual_motor(self):
+        if not self.manual_motor_mode:return False
+        return self.send_motor_calibration("stop")
+    def leave_manual_motor_mode(self):
+        if not self.manual_motor_mode:return True
+        desired=self.desired
+        speed=desired["speed"] if self.playing else 0.0
+        message=f"手動回転を終了し、現在のタイムライン目標 {desired['angle']:.2f}°・速度 {speed:.2f}°/s に戻します。\n現在位置からモーターが回り始める可能性があります。続けますか？"
+        if not messagebox.askyesno("モーター自動制御へ戻す",message,parent=self.root):return False
+        if not self.send_motor_calibration("exit"):return False
+        self.manual_motor_mode=False;self.manual_motor_armed=False
+        self.override["angle"].set(False);self.override["speed"].set(False)
+        self.send(True)
+        self.log("モーター手動モード終了：タイムライン角度制御へ復帰")
+        self.update_values()
+        return True
+    def auto_changed(self):
+        if not self.auto.get() and not messagebox.askyesno("自動変更をOFF","音声に同期した設定値の自動変更を停止しますか？"):
+            self.auto.set(True);return
+        self.log("設定値自動変更: "+("ON" if self.auto.get() else "OFF"));self.apply_timeline(self.position(),True)
+    def change_rate(self,_=None):
+        new=float(self.rate_var.get().rstrip("x"));p=self.position();was=self.playing
+        if self.rate_conversion_active:
+            self.rate_var.set(f"{self.rate:g}x");return
+        if was:self.pause()
+        self.seek_base=p
+        if not self.audio or abs(new-1.0)<.0001:
+            self.rate=new
+            if was:self.play()
+            return
+        self.rate_conversion_active=True;self.play_btn.configure(state="disabled",text="音声を変換中...")
+        threading.Thread(target=self.prepare_rate_audio_worker,args=(new,p,was),daemon=True).start()
+        return
+        new=float(self.rate_var.get().rstrip("x"));p=self.position();was=self.playing
+        if was:self.pause()
+        self.rate=new;self.seek_base=p
+        try:
+            if self.audio:self.rate_audio_path()
+            if was:self.play()
+            self.log(f"再生速度 {new}x（音声とタイムラインの両方へ反映）")
+        except Exception as e:
+            self.rate=1.0;self.rate_var.set("1.0x");self.seek_base=p
+            messagebox.showerror("倍速音声の作成エラー",str(e))
+            if was:self.play()
+    def prepare_rate_audio_worker(self,new,position,was_playing):
+        try:self.rate_results.put((True,new,position,was_playing,self.build_rate_audio(new),""))
+        except Exception as e:self.rate_results.put((False,new,position,was_playing,"",str(e)))
+    def finish_rate_change(self,result):
+        ok,new,position,was_playing,_path,error=result;self.rate_conversion_active=False;self.play_btn.configure(state="normal")
+        if ok:
+            self.rate=new;self.seek_base=position;self.log(f"再生速度 {new}x（ピッチ維持）")
+            if was_playing:self.play()
+            else:self.play_btn.config(text="▶  再生",bg=GREEN)
+        else:
+            self.rate_var.set(f"{self.rate:g}x");self.seek_base=position;self.play_btn.config(text="▶  再生",bg=GREEN);messagebox.showerror("倍速音声の作成エラー",error)
+    def build_rate_audio(self,rate):
+        source=Path(self.audio);cache_dir=APP_DIR/"audio_rate_cache";cache_dir.mkdir(parents=True,exist_ok=True);stat=source.stat();key=hashlib.sha1(f"pitch-v3|{source.resolve()}|{stat.st_size}|{stat.st_mtime_ns}|{rate:.3f}".encode("utf-8")).hexdigest()[:16];target=cache_dir/f"{key}_{rate:g}x_pitch.wav"
+        if target.exists() and target.stat().st_size>44:return str(target)
+        if source.suffix.lower()!=".wav":raise ValueError("ピッチを維持した倍速再生はWAV音声を選択してください。")
+        work=target.with_suffix(".parts");work.mkdir(parents=True,exist_ok=True);temporary=target.with_suffix(".tmp.wav")
+        try:
+            with wave.open(str(source),"rb") as src:
+                params=src.getparams();chunk_frames=params.framerate*30
+                with wave.open(str(temporary),"wb") as dst:
+                    dst.setnchannels(params.nchannels);dst.setsampwidth(params.sampwidth);dst.setframerate(params.framerate);part=0
+                    while True:
+                        raw=src.readframes(chunk_frames)
+                        if not raw:break
+                        frames=len(raw)//(params.nchannels*params.sampwidth);part_in=work/f"in_{part}.wav";part_out=work/f"out_{part}.wav"
+                        with wave.open(str(part_in),"wb") as piece:piece.setparams(params);piece.writeframes(raw)
+                        stretch_audio(str(part_in),str(part_out),ratio=1.0/rate);expected=round(frames/rate)
+                        with wave.open(str(part_out),"rb") as stretched:
+                            data=stretched.readframes(expected);actual=len(data)//(params.nchannels*params.sampwidth);dst.writeframesraw(data)
+                            if actual<expected:dst.writeframesraw(b"\x00"*((expected-actual)*params.nchannels*params.sampwidth))
+                        part_in.unlink(missing_ok=True);part_out.unlink(missing_ok=True);part+=1
+            os.replace(temporary,target);return str(target)
+        finally:
+            temporary.unlink(missing_ok=True)
+            try:work.rmdir()
+            except OSError:pass
+    def rate_audio_path(self):
+        if not self.audio or abs(self.rate-1.0)<.0001:return self.audio
+        return self.build_rate_audio(self.rate)
+        source=Path(self.audio);cache_dir=APP_DIR/"audio_rate_cache";cache_dir.mkdir(parents=True,exist_ok=True)
+        stat=source.stat();key=hashlib.sha1(f"pitch-v2|{source.resolve()}|{stat.st_size}|{stat.st_mtime_ns}|{self.rate:.3f}".encode("utf-8")).hexdigest()[:16];target=cache_dir/f"{key}_{self.rate:g}x_pitch.wav"
+        if target.exists() and target.stat().st_size>44:return str(target)
+        self.root.config(cursor="wait");self.root.update_idletasks()
+        try:
+            stretch_source=source
+            if source.suffix.lower()!=".wav":
+                decoded=cache_dir/f"{key}_decoded.wav";sound=pygame.mixer.Sound(str(source));frequency,fmt,channels=pygame.mixer.get_init();width=abs(fmt)//8
+                with wave.open(str(decoded),"wb") as dst:dst.setnchannels(channels);dst.setsampwidth(width);dst.setframerate(frequency);dst.writeframes(sound.get_raw())
+                stretch_source=decoded
+            stretch_audio(str(stretch_source),str(target),ratio=1.0/self.rate)
+            self.fix_stretched_duration(stretch_source,target)
+            return str(target)
+        except Exception:
+            try:target.unlink(missing_ok=True)
+            except Exception:pass
+            raise
+        finally:self.root.config(cursor="")
+    def fix_stretched_duration(self,source,target):
+        with wave.open(str(source),"rb") as src:expected=round(src.getnframes()/self.rate)
+        with wave.open(str(target),"rb") as stretched:
+            params=stretched.getparams();actual=stretched.getnframes()
+            if actual==expected:return
+            corrected=target.with_suffix(".corrected.wav")
+            with wave.open(str(corrected),"wb") as dst:
+                dst.setnchannels(params.nchannels);dst.setsampwidth(params.sampwidth);dst.setframerate(params.framerate);remaining=expected
+                while remaining>0:
+                    data=stretched.readframes(min(remaining,65536))
+                    if not data:break
+                    frames=len(data)//(params.nchannels*params.sampwidth);dst.writeframesraw(data);remaining-=frames
+                if remaining>0:dst.writeframesraw(b"\x00"*(remaining*params.nchannels*params.sampwidth))
+        os.replace(corrected,target)
+    def check_output_device(self):
+        detected=default_output_name()
+        if not detected or detected==self.output_device:return
+        old=self.output_device;position=self.position();was_playing=self.playing
+        try:
+            if pygame.mixer.get_init():pygame.mixer.music.stop();pygame.mixer.quit()
+            pygame.mixer.init();self.output_device=default_output_name();self.speaker_label.config(text="出力スピーカー: "+self.output_device)
+            if was_playing and self.audio:self.seek_base=position;self.play()
+            self.log(f"音声出力を切替: {old} → {self.output_device}")
+        except Exception as e:self.output_device=detected;self.speaker_label.config(text="出力スピーカー: "+detected+"（切替失敗）");self.log(f"音声出力切替失敗: {e}")
+    def actual_link_ok(self,device):
+        pc_ok=bool(self.ser and self.last_pc and time.monotonic()-self.last_pc<3)
+        if device=="motor":return pc_ok
+        link=self.links[device];last=link["last"]
+        return bool(pc_ok and link["online"] and not link["unstable"] and last and time.monotonic()-last<max(3,self.cfg["esp_interval"]+2))
+    def update_values(self):
+        try:d=self.effective()
+        except:d=self.desired
+        for k,w in self.vars.items():
+            a=d[k];b=self.actual[k];link_ok=self.actual_link_ok("motor" if k in ("angle","speed") else "light");link_ok=link_ok and (self.motor_origin_set if k in ("angle","speed") else True);continuous=k=="angle" and abs(abs(a)-999.0)<.01
+            continuous_text="連続回転 (CW)" if a>0 else "連続回転 (CCW)"
+            motor_manual=self.manual_motor_mode and k in ("angle","speed")
+            w["req"].set("手動操作中" if motor_manual else continuous_text if continuous else (f"{a:.2f}" if k in ("angle","speed") else ("ON" if a else "OFF")))
+            if k=="angle":actual_text=f"現在角度 {b%360.0:.2f}°"
+            elif k=="speed":actual_text=f"{b:.2f} °/s"
+            else:actual_text="ON" if b else "OFF"
+            w["act"].set(actual_text if link_ok else actual_text+"?");value_ok=self.manual_motor_armed if motor_manual else True if continuous else (abs(a-b)<.01 if k in ("angle","speed") else a==b);ok=value_ok and link_ok
+            row_bg="#30343b" if motor_manual or self.override[k].get() else ("#54202a" if not ok else CARD);w["box"].config(bg=row_bg)
+            for name in ("name","req_label","act_label"):w[name].config(bg=row_bg)
+            w["check"].config(bg=row_bg,activebackground=row_bg);w["led"].config(bg=row_bg);w["led"].set(GREEN if ok else (RED if self.flash else OFF))
+            if k not in ("angle","speed"):
+                w["req_label"].config(fg=GREEN if a else RED);w["act_label"].config(fg=(GREEN if b else RED) if link_ok else ORANGE)
+                manual_on=as_bool(self.manual[k].get());w["control"].config(fg=GREEN if manual_on else RED,activeforeground=GREEN if manual_on else RED)
+            else:w["req_label"].config(fg=TEXT);w["act_label"].config(fg=TEXT if link_ok else ORANGE)
+        if self.motor_origin_set:self.origin_status.config(text="原点設定済み：モーター制御可能",bg="#1f513b",fg="#9ff2be")
+        else:self.origin_status.config(text="原点未設定：モーター移動禁止",bg="#54202a",fg="#ffb6bd")
+        self.update_all_lights_button()
+        if self.manual_motor_mode:
+            text="モーター手動中：ライトは自動" if self.manual_motor_armed else "モーター手動待機：通信／校正状態を確認"
+            self.manual_motor_label.config(text=text,fg="#ffd789" if self.manual_motor_armed else RED)
+        else:self.manual_motor_label.config(text="")
+    def update_status(self):
+        now=time.monotonic();pc_ok=self.ser is not None and self.last_pc and now-self.last_pc<3
+        if self.ser:
+            if self.uart_health=="waiting" and self.uart_connected_at and now-self.uart_connected_at<3:new_uart="waiting"
+            else:new_uart="ok" if pc_ok else "failed"
+            if new_uart!=self.uart_health:
+                if new_uart=="failed":self.log("UART通信失敗: 統括マイコンから3秒以上応答がありません")
+                elif new_uart=="ok":self.log("UART通信確立" if self.uart_health=="waiting" else "UART通信復帰")
+                self.uart_health=new_uart
+            if new_uart=="failed" and self.auto_reconnect_enabled:
+                self.close_serial()
+                self.last_pc=None
+                self.uart_health="reconnecting"
+                self.next_reconnect_at=0.0
+                self.connect_btn.config(text="自動再接続を停止",bg=ORANGE)
+        elif self.uart_health not in ("failed","disconnected","reconnecting"):self.uart_health="disconnected"
+        for k in ("pc","light"):
+            card,led,title,age=self.status_widgets[k]
+            if k=="pc":last=self.last_pc;online=pc_ok;unstable=False
+            else:last=self.links[k]["last"];online=self.links[k]["online"] and last and now-last<max(3,self.cfg["esp_interval"]+2);unstable=self.links[k]["unstable"]
+            card_bg="#47262b" if not online else CARD
+            card.config(bg=card_bg);led.config(bg=card_bg);title.config(bg=card_bg);age.config(bg=card_bg)
+            if online and not unstable:led.set(GREEN)
+            else:led.set((ORANGE if unstable else RED) if self.flash else OFF)
+            communication="最終通信: --" if not last else f"最終通信から {now-last:.1f}秒";uptime=self.mcu_uptime[k];age.config(text=f"{communication}　　起動後 {fmt_uptime(uptime)}" if uptime else f"{communication}　　起動後 --")
+    def tick(self):
+        while not self.rx.empty():self.process(self.rx.get())
+        while not self.rate_results.empty():self.finish_rate_change(self.rate_results.get())
+        p=self.position()
+        now=time.monotonic()
+        if now-self.last_speaker_check>=2:self.last_speaker_check=now;self.check_output_device()
+        if self.playing and p>=self.duration:self.pause();self.seek_base=self.duration
+        if self.auto.get():self.apply_timeline(p)
+        self.pos.set(p);self.time_label.config(text=f"{fmt_time(p)} / {fmt_time(self.duration)}");remain=max(0,(self.duration-p)/self.rate);self.end_label.config(text=f"残り {fmt_time(remain)} / 予定 {(datetime.now()+timedelta(seconds=remain)):%H:%M:%S}");self.next_label.config(text=self.next_info(p));self.update_step_highlight(p)
+        if now-self.last_flash_at>=.5:self.flash=not self.flash;self.last_flash_at=now
+        self.update_values();self.update_status()
+        if self.auto_reconnect_enabled and not self.ser and now>=self.next_reconnect_at:
+            self.next_reconnect_at=now+1.0
+            device=self.reconnect_device()
+            if device:
+                self.connect_serial(device,automatic=True)
+            elif now-self.reconnect_log_at>=10.0:
+                self.log("UART自動再接続待機中: 統括・モーター基板を探しています");self.reconnect_log_at=now
+        if self.ser and now-self.last_keepalive>=1.0:self.write({"cmd":"ping"});self.last_keepalive=now
+        if self.ser and (self.last_sent is None or time.monotonic()-getattr(self,"last_uart",0)>=self.cfg["uart_interval"]):self.send(True);self.last_uart=time.monotonic()
+        self.root.after(100,self.tick)
+    def settings_dialog(self):
+        w=tk.Toplevel(self.root);w.title("通信・フェード設定");w.configure(bg=PANEL);vals={}
+        self.button(w,"星座名設定（固定配線）",self.mapping_dialog,bg=HELP_BLUE).grid(row=0,column=2,padx=12,pady=8)
+        specs=(("uart_interval","PC→統括 定期送信間隔 (秒)"),("esp_interval","統括→子機 定期送信間隔 (秒)"),("retry_timeout","ACK待機 (秒)"),("max_retries","最大再送回数"),("fade_seconds","ライトのフェード時間 (秒、0〜600 / 0は即時)"))
+        for i,(k,l) in enumerate(specs):self.label(w,l).grid(row=i,column=0,sticky="w",padx=12,pady=8);v=tk.StringVar(value=str(self.cfg[k]));tk.Entry(w,textvariable=v).grid(row=i,column=1,padx=12);vals[k]=v
+        presets=self.frame(w);presets.grid(row=4,column=2,padx=10)
+        self.button(presets,"短め：3秒",lambda:vals["fade_seconds"].set("3.0"),pady=3).pack(pady=3)
+        self.button(presets,"旧上映：5秒",lambda:vals["fade_seconds"].set("5.0"),pady=3).pack(pady=3)
+        def ok():
+            try:
+                updated={k:(int(v.get()) if k=="max_retries" else float(v.get())) for k,v in vals.items()}
+                if not 0 <= updated["fade_seconds"] <= 600:raise ValueError("フェード時間の範囲外")
+                self.cfg.update(updated)
+                self.configure_mcu();self.send(True);self.save_cfg();w.destroy();self.log("通信・フェード設定を更新")
+            except ValueError:messagebox.showerror("入力エラー","数値を入力してください",parent=w)
+        self.button(w,"保存",ok,bg=BLUE).grid(row=len(specs),column=0,columnspan=2,pady=12)
+    def mapping_dialog(self):
+        w=tk.Toplevel(self.root);w.title("星座名設定（既存基板対応）");w.configure(bg=PANEL);rows=[]
+        self.label(w,"この版は既存基板の固定配線を使用します。星座名のみ変更できます。",fg=MUTED).grid(row=0,column=0,columnspan=3,padx=12,pady=10)
+        for i in range(8):
+            self.label(w,f"系統 {i+1}").grid(row=i+1,column=0,padx=12,pady=4)
+            name=tk.StringVar(value=LABELS[f"p{i+1}"]);pin=tk.StringVar(value="なし" if self.constellation_pins[i]==255 else f"D{self.constellation_pins[i]}")
+            tk.Entry(w,textvariable=name,bg=BG,fg=TEXT,insertbackground=TEXT).grid(row=i+1,column=1,padx=8)
+            self.label(w,pin.get()).grid(row=i+1,column=2,padx=12)
+            rows.append((name,pin))
+        def save():
+            pins=[255 if pin.get()=="なし" else int(pin.get()[1:]) for _,pin in rows];names=[name.get().strip() for name,_ in rows]
+            assigned=[p for p in pins if p!=255]
+            if len(assigned)!=len(set(assigned)) or not all(names):messagebox.showerror("設定エラー","星座名を入力し、出力ピンの重複を解消してください。",parent=w);return
+            self.constellation_pins=pins;self.cfg.update(constellation_pins=pins,constellation_names=names)
+            for i,name in enumerate(names,1):
+                key=f"p{i}";LABELS[key]=name;self.vars[key]["name"].configure(text=name);self.step_tree.heading(key,text=name)
+            self.save_cfg();self.log("星座名を保存（既存基板の固定配線を使用）");w.destroy()
+        self.button(w,"星座名を保存",save,bg=BLUE).grid(row=9,column=0,columnspan=3,pady=12)
+    def send_motor_calibration(self,action,speed=0.0,value=0.0):
+        if not self.ser or not getattr(self.ser,"is_open",False):self.log("モーター校正送信失敗: UART未接続");messagebox.showerror("UART未接続","統括マイコンへUART接続してから操作してください");return False
+        ok=self.write({"cmd":"motor_cal","action":action,"speed":float(speed),"value":float(value)})
+        if ok:self.log(f"モーター校正送信 action={action} speed={float(speed):.3f} value={float(value):.3f}")
+        return ok
+    def open_motor_calibration(self):
+        if self.motor_transfer:return messagebox.showwarning("位置合わせ中","位置合わせを完了またはキャンセルしてください。",parent=self.root)
+        if self.emergency_stop:return messagebox.showwarning("緊急停止中","緊急停止を解除するまで、モーター0°位置設定は使用できません。",parent=self.root)
+        if self.manual_motor_mode:return messagebox.showwarning("手動モード中","モーター手動モードを終了してから0°位置設定を開いてください。",parent=self.root)
+        if self.playing:return messagebox.showwarning("再生中は操作できません","音声を一時停止または停止してから、モーター0°位置設定を開いてください。",parent=self.root)
+        if self.calibration_window and self.calibration_window.w.winfo_exists():self.calibration_window.w.lift();return
+        self.calibration_window=MotorCalibrationWindow(self)
+    def timeline_editor(self):TimelineEditor(self)
+    def close(self):
+        try:
+            if self.motor_transfer:self.motor_transfer.stop()
+            self.pause()
+            if self.ser:self.ser.close()
+            self.save_cfg()
+        finally:self.root.destroy()
+
+class ManualMotorWindow:
+    def __init__(self,app):
+        self.app=app
+        self.w=tk.Toplevel(app.root);self.w.title("モーター手動操作 — ライトは自動");self.w.geometry("620x390");self.w.minsize(560,350);self.w.configure(bg=BG)
+        self.angle=tk.StringVar(value="5.0");self.speed=tk.StringVar(value="5.0");self.pending_until=0.0
+        self.build();self.w.protocol("WM_DELETE_WINDOW",self.close);self.update_status()
+    def build(self):
+        self.app.label(self.w,"モーター手動操作",font=("Yu Gothic UI",17,"bold")).pack(anchor="w",padx=18,pady=(15,3))
+        self.app.label(self.w,"音声・一等星・恒星・星座はタイムラインに従って続きます。モーターだけ指定角度を移動します。",fg="#9ec7ef",wraplength=570,justify="left").pack(anchor="w",padx=18,pady=(0,8))
+        self.status=self.app.label(self.w,"状態確認中…",bg=CARD,anchor="w",justify="left",font=("Yu Gothic UI",10,"bold"));self.status.pack(fill="x",padx=18,pady=5,ipadx=10,ipady=8)
+        controls=self.app.frame(self.w,bg=CARD);controls.pack(fill="x",padx=18,pady=6)
+        self.start_btn=self.app.button(controls,"手動モード開始",self.app.start_manual_motor_mode,bg=ORANGE);self.start_btn.pack(side="left",padx=10,pady=9)
+        self.app.button(controls,"■ モーター停止",self.app.stop_manual_motor,bg=RED).pack(side="left",padx=6)
+        move=self.app.frame(self.w,bg=CARD);move.pack(fill="x",padx=18,pady=6)
+        self.app.label(move,"移動角度 (°)",bg=CARD).grid(row=0,column=0,padx=10,pady=8)
+        tk.Entry(move,textvariable=self.angle,width=10,bg="#0e151e",fg=TEXT,insertbackground=TEXT,relief="flat").grid(row=0,column=1,padx=6)
+        self.app.label(move,"回転速度 (°/s)",bg=CARD).grid(row=0,column=2,padx=10)
+        tk.Entry(move,textvariable=self.speed,width=10,bg="#0e151e",fg=TEXT,insertbackground=TEXT,relief="flat").grid(row=0,column=3,padx=6)
+        self.cw_btn=self.app.button(move,"＋ 時計回り",lambda:self.move(1),bg=BLUE);self.cw_btn.grid(row=1,column=0,columnspan=2,padx=10,pady=(2,10),sticky="ew")
+        self.ccw_btn=self.app.button(move,"－ 反時計回り",lambda:self.move(-1),bg="#7657b5");self.ccw_btn.grid(row=1,column=2,columnspan=2,padx=10,pady=(2,10),sticky="ew")
+        self.app.label(self.w,"角度表示はモーターパルスからの推定値です。実際の位置も目視で確認してください。",fg=MUTED,font=("Yu Gothic UI",9),wraplength=570).pack(anchor="w",padx=18,pady=7)
+        self.app.button(self.w,"タイムラインのモーター制御へ戻す",self.app.leave_manual_motor_mode,bg=GREEN).pack(anchor="e",padx=18,pady=4)
+    def move(self,direction):
+        try:
+            angle=float(self.angle.get());speed=float(self.speed.get())
+            if not math.isfinite(angle) or not math.isfinite(speed) or not 0<angle<=360 or not 0<speed<=100:raise ValueError
+        except ValueError:
+            messagebox.showerror("入力エラー","移動角度は0より大きく360°以下、速度は0より大きく100°/s以下で入力してください。",parent=self.w);return
+        if time.monotonic()<self.pending_until:return
+        if self.app.move_manual_motor(direction*angle,speed):self.pending_until=time.monotonic()+0.8
+    def update_status(self):
+        if not self.w.winfo_exists():return
+        connected=self.app.actual_link_ok("motor")
+        active=self.app.manual_motor_mode
+        armed=self.app.manual_motor_armed and connected
+        motion=self.app.motor_motion if armed else "stopped"
+        if not active:text="タイムライン制御中。手動モード開始でモーターを停止します。";color="#9ec7ef"
+        elif not armed:text="手動モード待機中。通信復旧後は「手動モード再開」を押してください。";color="#ffb6bd"
+        elif motion=="relative":text=f"相対角度移動中　目標 {self.app.motor_target_angle:.2f}°";color="#ffd789"
+        else:text="手動モード中・モーター停止。ライトの自動切替は継続中。";color="#9ff2be"
+        angle=f"{self.app.actual['angle']%360.0:.2f}°"+('?' if not connected else '')
+        self.status.config(text=f"{text}\n推定現在角度 {angle}",fg=color)
+        self.start_btn.config(text="手動モード再開" if active else "手動モード開始",state="disabled" if armed else "normal")
+        move_state="normal" if armed and motion=="stopped" and time.monotonic()>=self.pending_until else "disabled"
+        self.cw_btn.config(state=move_state);self.ccw_btn.config(state=move_state)
+        self.w.after(250,self.update_status)
+    def close(self):
+        self.app.manual_motor_window=None
+        self.w.destroy()
+
+class MotorTransferWindow:
+    def __init__(self,app,delta,position,resume):
+        self.app=app;self.position=position;self.resume=resume;self.initial_angle=float(app.actual["angle"]);self.target=(self.initial_angle+delta)%360;self.delta=delta;self.started=time.monotonic();self.exit_requested=False;self.cancelled=False;self.stopped=False;self.stage="stopping"
+        self.w=tk.Toplevel(app.root);self.w.title("モーター位置合わせ");self.w.configure(bg=BG);self.w.geometry("510x300");self.w.protocol("WM_DELETE_WINDOW",self.cancel)
+        app.label(self.w,"モーター位置合わせ",font=("Yu Gothic UI",16,"bold")).pack(pady=15)
+        self.status=app.label(self.w,"移動指令を送信中…",bg=CARD,justify="left",font=("Yu Gothic UI",12));self.status.pack(fill="x",padx=20,pady=10,ipady=12)
+        row=app.frame(self.w);row.pack(pady=10)
+        app.button(row,"■ ストップ",self.stop,bg=RED).pack(side="left",padx=6)
+        app.button(row,"キャンセル",self.cancel,bg="#526170").pack(side="left",padx=6)
+        if not app.send_motor_calibration("stop"):self.stopped=True
+        self.w.after(100,self.update)
+    def stop(self):
+        self.stopped=True;self.resume=False;self.app.send_motor_calibration("stop")
+    def cancel(self):
+        self.cancelled=True;self.resume=False;self.app.send_motor_calibration("stop");self.request_exit()
+    def request_exit(self):
+        if self.exit_requested:return
+        if self.app.send_motor_calibration("exit"):
+            self.exit_requested=True;self.exit_at=time.monotonic()
+    def update(self):
+        if not self.w.winfo_exists():return
+        app=self.app;connected=app.actual_link_ok("motor");angle=float(app.actual["angle"]);speed=0.0 if app.motor_motion=="stopped" else abs(float(app.actual["speed"]));remaining=abs((self.target-angle+180)%360-180)
+        # For a long forced-direction move, show the remaining path, not the
+        # shortest angular distance, until the final arrival.
+        if self.delta<0:remaining=(angle-self.target)%360
+        elif self.delta>0:remaining=(self.target-angle)%360
+        state="停止中" if self.stopped else "通信待ち" if not connected else "通常制御へ復帰中" if self.exit_requested else "停止位置を確認中" if self.stage=="stopping" else "位置合わせ中"
+        self.status.config(text=f"{state}\n現在角度：{angle:.2f}°　目標：{self.target:.2f}°\n回転速度：{speed:.2f}°/s（設定 5°/s）\n残り時間：約 {remaining/5:.1f} 秒",fg=RED if self.stopped or not connected else TEXT)
+        if app.emergency_stop or not connected:self.stopped=True;self.resume=False
+        if not self.stopped and not self.exit_requested and self.stage=="stopping" and app.last_motor_status>self.started and app.motor_calibration_mode and app.motor_motion=="stopped":
+            self.delta-=(angle-self.initial_angle+180)%360-180
+            if app.send_motor_calibration("move_relative",5.0,self.delta):self.stage="moving";self.started=time.monotonic()
+            else:self.stopped=True;self.resume=False
+        if not self.stopped and not self.exit_requested and self.stage=="moving" and app.last_motor_status>self.started+.3 and app.motor_motion=="stopped" and min(remaining,360-remaining)<.15:self.request_exit()
+        if self.exit_requested and app.last_motor_status>self.exit_at and not app.motor_calibration_mode:
+            app.motor_transfer=None;self.w.destroy()
+            if not self.cancelled:
+                app.seek_base=self.position;app.pos.set(self.position);app.apply_timeline(self.position,True)
+                if self.resume:app.play()
+            return
+        self.w.after(100,self.update)
+
+class MotorCalibrationWindow:
+    def __init__(self,app):
+        self.app=app;self.w=tk.Toplevel(app.root);self.w.title("モーター0°位置設定");self.w.geometry("700x680");self.w.minsize(650,600);self.w.configure(bg=BG);self.speed=tk.StringVar(value="5.0");self.delta=tk.StringVar(value="1.0");self.current_angle=tk.StringVar(value="0.0");self.jog_request_until=0;self.jog_requested=False;self.jog_requested_direction=0;self.build();self.speed.trace_add("write",lambda *_:self.update_relative_speed_label());self.update_relative_speed_label();self.w.protocol("WM_DELETE_WINDOW",self.finish);self.app.send_motor_calibration("stop");self.update_status()
+    def build(self):
+        self.app.label(self.w,"モーター0°位置設定",font=("Yu Gothic UI",18,"bold")).pack(anchor="w",padx=18,pady=(15,3));self.app.label(self.w,"校正コマンド送信後は通常の周期モーター指令を停止します。作業後は必ず「通常制御へ戻る」を押してください。",fg=ORANGE,wraplength=610,justify="left").pack(anchor="w",padx=18,pady=(0,10));self.status=self.app.label(self.w,"状態確認中…",bg=CARD,fg="#9ec7ef",anchor="w",justify="left");self.status.pack(fill="x",padx=18,pady=5,ipadx=10,ipady=7)
+        jog=self.app.frame(self.w,bg=CARD);jog.pack(fill="x",padx=18,pady=6);self.app.label(jog,"連続回転（ジョグ）",bg=CARD,font=("Yu Gothic UI",11,"bold")).grid(row=0,column=0,columnspan=6,sticky="w",padx=10,pady=(8,4));self.motion=self.app.label(jog,"● 停止中",bg="#26313d",fg="#b8c5d3",font=("Yu Gothic UI",11,"bold"));self.motion.grid(row=0,column=3,columnspan=2,padx=8,pady=(6,2),ipadx=10,ipady=3);self.app.label(jog,"回転速度 (°/s)",bg=CARD).grid(row=1,column=0,padx=10,pady=8);tk.Entry(jog,textvariable=self.speed,width=10,bg="#0e151e",fg=TEXT,insertbackground=TEXT,relief="flat").grid(row=1,column=1,padx=4);self.jog_btn=self.app.button(jog,"▶ 回転",self.toggle_jog,bg=GREEN);self.jog_btn.grid(row=1,column=2,padx=8);self.app.label(jog,"正: 時計回り　／　負: 反時計回り",bg=CARD,fg="#9ec7ef",font=("Yu Gothic UI",9)).grid(row=2,column=0,columnspan=5,sticky="w",padx=10,pady=(0,8))
+        rel=self.app.frame(self.w,bg=CARD);rel.pack(fill="x",padx=18,pady=6);self.app.label(rel,"相対角度移動",bg=CARD,font=("Yu Gothic UI",11,"bold")).grid(row=0,column=0,columnspan=5,sticky="w",padx=10,pady=(8,4));self.app.label(rel,"移動角度 (°)",bg=CARD).grid(row=1,column=0,padx=10,pady=8);tk.Entry(rel,textvariable=self.delta,width=10,bg="#0e151e",fg=TEXT,insertbackground=TEXT,relief="flat").grid(row=1,column=1,padx=4);self.app.button(rel,"－角度移動",lambda:self.move_relative(-1)).grid(row=1,column=2,padx=6);self.app.button(rel,"＋角度移動",lambda:self.move_relative(1)).grid(row=1,column=3,padx=6);self.relative_speed_label=self.app.label(rel,"",bg="#174763",fg="#9cdeff",font=("Yu Gothic UI",10,"bold"));self.relative_speed_label.grid(row=1,column=4,padx=8,pady=5,ipadx=8,ipady=5)
+        zero=self.app.frame(self.w,bg=CARD);zero.pack(fill="x",padx=18,pady=6);self.app.label(zero,"0°へ戻す（固定速度 5°/s）",bg=CARD,font=("Yu Gothic UI",11,"bold")).grid(row=0,column=0,columnspan=3,sticky="w",padx=10,pady=(8,4));self.app.button(zero,"時計回りで0°へ",lambda:self.return_to_zero(True),bg=BLUE).grid(row=1,column=0,padx=10,pady=8);self.app.button(zero,"反時計回りで0°へ",lambda:self.return_to_zero(False),bg="#7657b5").grid(row=1,column=1,padx=8,pady=8);self.app.label(zero,"現在角度から指定方向だけに回転します",bg=CARD,fg="#9ec7ef",font=("Yu Gothic UI",9)).grid(row=1,column=2,padx=8,pady=8)
+        origin=self.app.frame(self.w,bg=CARD);origin.pack(fill="x",padx=18,pady=6);self.app.label(origin,"論理角度の再設定",bg=CARD,font=("Yu Gothic UI",11,"bold")).grid(row=0,column=0,columnspan=5,sticky="w",padx=10,pady=(8,4));self.app.button(origin,"現在位置を0°に設定",self.set_zero,bg=RED).grid(row=1,column=0,padx=10,pady=8);self.app.label(origin,"現在位置を",bg=CARD).grid(row=1,column=1,padx=(15,3));tk.Entry(origin,textvariable=self.current_angle,width=10,bg="#0e151e",fg=TEXT,insertbackground=TEXT,relief="flat").grid(row=1,column=2,padx=3);self.app.label(origin,"°として設定",bg=CARD).grid(row=1,column=3,padx=3);self.app.button(origin,"角度設定",self.set_angle,bg=ORANGE).grid(row=1,column=4,padx=8)
+        self.app.button(self.w,"通常制御へ戻る（校正終了）",self.finish,bg=GREEN).pack(pady=14,ipadx=25,ipady=5)
+    def update_relative_speed_label(self):
+        try:
+            speed=abs(float(self.speed.get()))
+            if not math.isfinite(speed) or speed==0:raise ValueError
+            self.relative_speed_label.config(text=f"適用速度 {speed:g}°/s",bg="#174763",fg="#9cdeff")
+        except ValueError:self.relative_speed_label.config(text="速度を確認",bg="#54202a",fg="#ffb6bd")
+    def numbers(self):
+        try:
+            speed=float(self.speed.get());delta=abs(float(self.delta.get()));angle=float(self.current_angle.get())
+            if not all(math.isfinite(v) for v in (speed,delta,angle)):raise ValueError("有限の数値を入力してください")
+            if speed==0:raise ValueError("回転速度は0以外にしてください")
+            if delta==0:raise ValueError("移動角度は0以外にしてください")
+            return speed,delta,angle
+        except ValueError as e:messagebox.showerror("入力エラー",str(e),parent=self.w);return None
+    def command(self,action,speed=0,value=0):self.app.send_motor_calibration(action,speed,value)
+    def toggle_jog(self):
+        running=abs(self.app.actual["speed"])>.001 or (self.jog_requested and time.monotonic()<self.jog_request_until)
+        if running:
+            self.command("stop");self.jog_requested=False;self.jog_requested_direction=0;self.jog_request_until=time.monotonic()+1.0;self.jog_btn.config(text="▶ 回転",bg=GREEN)
+        else:
+            n=self.numbers()
+            if n:
+                speed=n[0];self.command("jog_cw" if speed>0 else "jog_ccw",abs(speed),0);self.jog_requested=True;self.jog_requested_direction=1 if speed>0 else -1;self.jog_request_until=time.monotonic()+1.0;self.jog_btn.config(text="■ 停止",bg=RED)
+    def move_relative(self,direction):
+        n=self.numbers()
+        if n:self.jog_requested=False;self.jog_requested_direction=0;self.command("move_relative",abs(n[0]),direction*n[1])
+    def return_to_zero(self,clockwise):
+        if not self.app.motor_origin_set:
+            messagebox.showwarning("原点未設定","先に現在位置を0°または既知の角度として設定してください。",parent=self.w);return
+        if not self.app.actual_link_ok("motor"):
+            messagebox.showwarning("現在角度を確認できません","統括・モーター基板との通信が正常になってから操作してください。",parent=self.w);return
+        angle=float(self.app.actual["angle"])%360.0;delta=zero_return_delta(angle,clockwise)
+        if delta==0.0:
+            messagebox.showinfo("0°位置","現在位置はすでに0°です。",parent=self.w);return
+        direction="時計回り" if clockwise else "反時計回り"
+        if not messagebox.askyesno("0°へ戻す",f"現在角度 {angle:.2f}° から、{direction}に {abs(delta):.2f}° 回転し、0°へ戻します。\n速度は5°/sです。実行しますか？",parent=self.w):return
+        self.jog_requested=False;self.jog_requested_direction=0;self.command("move_relative",5.0,delta)
+    def set_zero(self):
+        if messagebox.askyesno("0°位置を設定","現在のモーター位置を0°として記憶しますか？",parent=self.w):self.command("set_zero")
+    def set_angle(self):
+        try:angle=float(self.current_angle.get())%360.0
+        except ValueError:messagebox.showerror("入力エラー","現在角度を数値で入力してください",parent=self.w);return
+        if messagebox.askyesno("現在角度を設定",f"現在のモーター位置を {angle:.3f}° として記憶しますか？",parent=self.w):self.command("set_angle",0,angle)
+    def update_status(self):
+        if not self.w.winfo_exists():return
+        known=self.app.actual_link_ok("motor");suffix="" if known else "?";mode="校正モード" if self.app.motor_calibration_mode else "通常制御（校正コマンド待機）";origin="設定済み" if self.app.motor_origin_set else "未設定（通常移動は禁止）";speed=self.app.actual['speed'];motion=self.app.motor_motion
+        if motion in ("jog_cw","jog_ccw") or (self.jog_requested and time.monotonic()<self.jog_request_until):
+            direction="反時計回り" if motion=="jog_ccw" or (motion not in ("jog_cw","jog_ccw") and self.jog_requested_direction<0) else "時計回り";self.jog_requested=True;self.motion.config(text=f"● 連続回転中：{direction}",bg="#594219",fg="#ffd27a");self.jog_btn.config(text="■ 停止",bg=RED,state="normal")
+        elif motion=="relative":
+            self.jog_requested=False;self.motion.config(text=f"◆ 相対角度移動中　目標 {self.app.motor_target_angle:.3f}°\n連続回転ではありません",bg="#173e5a",fg="#8fd3ff",justify="center");self.jog_btn.config(text="▶ 回転",bg=GREEN,state="disabled")
+        elif time.monotonic()>=self.jog_request_until:self.jog_requested=False;self.jog_requested_direction=0;self.motion.config(text="● 停止中（連続回転なし）",bg="#26313d",fg="#b8c5d3");self.jog_btn.config(text="▶ 回転",bg=GREEN,state="normal")
+        self.status.config(text=f"統括状態: {mode}　原点: {origin}\n最終受信角度: {self.app.actual['angle']:.3f}°{suffix}　速度: {speed:.3f}°/s{suffix}");self.w.after(250,self.update_status)
+    def finish(self):
+        if not messagebox.askyesno("校正を終了","モーターを停止して通常のタイムライン制御へ戻りますか？",parent=self.w):return
+        ok=self.app.send_motor_calibration("exit")
+        if not ok and not messagebox.askyesno("送信失敗","終了指令を送信できませんでした。統括マイコンが校正モードのまま残る可能性があります。ウィンドウだけ閉じますか？",parent=self.w):return
+        self.app.calibration_window=None;self.w.destroy()
+
+class TimelineEditor:
+    def __init__(self,app):
+        self.app=app;self.w=tk.Toplevel(app.root);self.w.title("指示送信設定エディター");self.w.geometry("1380x650");self.w.configure(bg=BG);self.rows=[dict(r) for r in app.timeline];self.path=getattr(app,"timeline_path","");self.active_col="time";self.active_row=None;self.editor=None;self.cell_focus=None;self.value_labels=[];self.selected_color_label=None;self.refreshing_value_colors=False;self.value_color_job=None;self.drag_from=None;self.drag_to=None;self.drag_moved=False;self.copied_row=None;self.build();self.refresh()
+    def build(self):
+        bar=tk.Frame(self.w,bg=PANEL);bar.pack(fill="x",padx=10,pady=10)
+        for text,cmd in (("選択行を引き継いで追加",self.add),("行を複製",self.duplicate),("行を削除",self.delete),("TXTインポート",self.import_),("上書き保存",self.save),("名前を付けて保存",self.save_as),("メインへ反映",self.apply)):
+            self.app.button(bar,text,cmd).pack(side="left",padx=3)
+        self.app.button(bar,"使い方",self.show_help,bg=HELP_BLUE).pack(side="left",padx=3)
+        self.cols=("step","time")+tuple(FIELDS);self.tree=ttk.Treeview(self.w,columns=self.cols,show="headings",selectmode="browse",style="Dark.Treeview")
+        for c in self.cols:
+            title="STEP" if c=="step" else "時刻(s)" if c=="time" else LABELS[c];self.tree.heading(c,text=title);self.tree.column(c,width=75 if c=="step" else 100,anchor="center",stretch=True)
+        self.tree.pack(fill="both",expand=True,padx=10);self.tree.bind("<Double-1>",self.begin_cell_edit);self.tree.bind("<ButtonPress-1>",self.start_row_drag);self.tree.bind("<B1-Motion>",self.drag_row_motion);self.tree.bind("<ButtonRelease-1>",self.finish_row_drag);self.tree.bind("<Control-c>",self.copy_cell);self.tree.bind("<Control-C>",self.copy_cell);self.tree.bind("<Control-v>",self.paste_cell);self.tree.bind("<Control-V>",self.paste_cell);self.tree.bind("<MouseWheel>",lambda _e:self.schedule_value_colors(),add="+");self.tree.bind("<Configure>",lambda _e:self.schedule_value_colors(),add="+")
+        self.app.label(self.w,"セルをダブルクリックして直接編集　｜　Ctrl+C / Ctrl+V でセル値をコピー　｜　STEP列では行の複製、ドラッグで順番変更　｜　±999＝無限回転（速度の正負で方向指定）",fg=MUTED).pack(anchor="w",padx=14,pady=10)
+    def show_help(self):
+        self.app.show_help_window("指示送信設定の使い方","""【セル編集】
+時刻・角度・速度はセルをダブルクリックして入力し、Enterで確定します。ON/OFFセルはダブルクリックするたびに切り替わります。
+
+【コピー・貼り付け】
+セルをクリックしてCtrl+C、貼り付け先をクリックしてCtrl+Vを押します。ON/OFFもコピーできます。STEP列を選んでコピー・貼り付けすると行全体を複製します。
+
+【行操作】
+STEP列をクリックすると行全体を選択します。「選択行を引き継いで追加」は、その行と同じ内容を直後へ追加します。STEP列を上下へドラッグすると順番を変更できます。
+
+【角度】
+通常角度は0°以上360°未満です。999または-999で無限回転になります。回転速度が正なら時計回り、負なら反時計回りです。
+
+【保存と反映】
+上書き保存または名前を付けて保存でTXTへ保存します。「メインへ反映」で現在の編集内容をメイン画面のタイムラインへ適用します。""",self.w)
+    def refresh(self):
+        self.clear_cell_focus();self.clear_value_colors()
+        self.tree.delete(*self.tree.get_children())
+        for i,r in enumerate(self.rows):self.tree.insert("", "end",iid=str(i),values=[f"STEP{i+1}",f'{r["time"]:.3f}',f'{r["angle"]:.2f}',f'{r["speed"]:.2f}',*("ON" if r[k] else "OFF" for k in FIELDS[2:])])
+        self.schedule_value_colors()
+    def schedule_value_colors(self):
+        if self.value_color_job:
+            try:self.w.after_cancel(self.value_color_job)
+            except tk.TclError:pass
+        self.value_color_job=self.w.after(15,self.refresh_value_colors)
+    def selected(self):
+        s=self.tree.selection();return int(s[0]) if s else None
+    def column_at(self,event):
+        n=int(self.tree.identify_column(event.x).lstrip("#") or 0);return self.cols[n-1] if 0<n<=len(self.cols) else None
+    def remember_cell(self,event):
+        c=self.column_at(event);row_id=self.tree.identify_row(event.y)
+        if not c or not row_id:return
+        self.select_cell(int(row_id),c)
+    def start_row_drag(self,event):
+        self.drag_from=None;self.drag_to=None;self.drag_moved=False
+        if self.column_at(event)!="step":return
+        row_id=self.tree.identify_row(event.y)
+        if not row_id:return
+        self.drag_from=int(row_id);self.drag_to=self.drag_from;self.select_cell(self.drag_from,"step")
+    def drag_row_motion(self,event):
+        if self.drag_from is None:return
+        row_id=self.tree.identify_row(event.y)
+        if not row_id:return "break"
+        target=int(row_id);self.drag_moved=self.drag_moved or target!=self.drag_from;self.drag_to=target
+        self.tree.selection_set(row_id);self.tree.focus(row_id);self.tree.see(row_id)
+        return "break"
+    def finish_row_drag(self,event):
+        if self.drag_from is None:
+            self.remember_cell(event);return
+        src=self.drag_from;dest=self.drag_to;was_moved=self.drag_moved
+        self.drag_from=None;self.drag_to=None;self.drag_moved=False
+        if was_moved and dest is not None and src!=dest:self.move_row(src,dest)
+        else:self.select_cell(src,"step")
+        return "break"
+    def move_row(self,src,dest):
+        if not (0<=src<len(self.rows)):return
+        item=self.rows.pop(src);dest=max(0,min(dest,len(self.rows)));self.rows.insert(dest,item)
+        self.refresh();self.active_row=dest;self.active_col="step";self.tree.selection_set(str(dest));self.tree.focus(str(dest));self.tree.see(str(dest));self.schedule_value_colors()
+    def select_cell(self,row,key):
+        self.active_col=key;self.active_row=row
+        if key=="step":
+            self.clear_cell_focus();self.tree.selection_set(str(row));self.tree.focus(str(row));self.w.after_idle(self.restyle_value_colors)
+        else:
+            self.tree.selection_remove(self.tree.selection());self.show_cell_focus(row,key);self.tree.focus_set();self.restyle_value_colors()
+    def select_colored_cell(self,label,row,key):
+        self.active_col=key;self.active_row=row;self.clear_cell_focus();self.tree.selection_remove(self.tree.selection())
+        self.restyle_value_colors();label.focus_set()
+    def restyle_value_colors(self):
+        selected=set(self.tree.selection());self.selected_color_label=None
+        for label in self.value_labels:
+            try:
+                on=bool(self.rows[label._row][label._key]);active=label._row==self.active_row and label._key==self.active_col;row_selected=str(label._row) in selected;label.config(bg="#0875c1" if active or row_selected else "#101821",fg="#ffffff" if active or row_selected else (GREEN if on else RED),text="ON" if on else "OFF")
+                if active and not row_selected:self.selected_color_label=label
+            except (tk.TclError,IndexError):pass
+    def clear_value_colors(self):
+        for label in self.value_labels:
+            try:label.destroy()
+            except tk.TclError:pass
+        self.value_labels=[];self.selected_color_label=None
+    def refresh_value_colors(self):
+        self.value_color_job=None
+        if self.refreshing_value_colors:return
+        self.refreshing_value_colors=True
+        try:
+            self.clear_value_colors();self.tree.update_idletasks();selected=set(self.tree.selection())
+            for row,r in enumerate(self.rows):
+                iid=str(row);bg="#0875c1" if iid in selected else "#101821"
+                for key in FIELDS[2:]:
+                    b=self.tree.bbox(iid,key)
+                    if not b:continue
+                    x,y,w,h=b;on=bool(r[key]);label=tk.Label(self.tree,text="ON" if on else "OFF",bg=bg,fg=GREEN if on else RED,font=("Yu Gothic UI",9,"bold"));label._row=row;label._key=key
+                    label.place(x=x+1,y=y+1,width=max(1,w-2),height=max(1,h-2));label.bind("<Button-1>",lambda _e,l=label,rr=row,k=key:self.select_colored_cell(l,rr,k));label.bind("<Double-1>",lambda _e,rr=row,k=key:self.toggle_bool_cell(rr,k));label.bind("<Control-c>",self.copy_cell);label.bind("<Control-C>",self.copy_cell);label.bind("<Control-v>",self.paste_cell);label.bind("<Control-V>",self.paste_cell);label.bind("<MouseWheel>",self.on_value_mousewheel);self.value_labels.append(label)
+                    if row==self.active_row and key==self.active_col and not selected:label.config(bg="#0875c1",fg="#ffffff");self.selected_color_label=label
+        finally:self.refreshing_value_colors=False
+    def on_value_mousewheel(self,event):
+        self.tree.yview_scroll(-1 if event.delta>0 else 1,"units");self.schedule_value_colors();return "break"
+    def clear_cell_focus(self):
+        if self.cell_focus:self.cell_focus.destroy();self.cell_focus=None
+    def show_cell_focus(self,row,key):
+        self.clear_cell_focus();self.tree.update_idletasks();b=self.tree.bbox(str(row),key)
+        if not b:return
+        x,y,w,h=b;value=self.tree.set(str(row),key);border=tk.Frame(self.tree,bg="#0875c1");label=tk.Label(border,text=value,bg="#0875c1",fg="#ffffff",font=("Yu Gothic UI",9));label.pack(fill="both",expand=True,padx=1,pady=1)
+        for widget in (border,label):widget.bind("<Double-1>",lambda _e,r=row,k=key:self.begin_edit_at(r,k));widget.bind("<Control-c>",self.copy_cell);widget.bind("<Control-C>",self.copy_cell);widget.bind("<Control-v>",self.paste_cell);widget.bind("<Control-V>",self.paste_cell)
+        border.place(x=x,y=y,width=w,height=h);self.cell_focus=border
+    def set_cell(self,row,key,value):
+        if key in UNCONNECTED_FIELDS:return
+        try:
+            if key in ("time","angle","speed"):self.rows[row][key]=float(value)
+            elif key in FIELDS[2:]:
+                v=str(value).strip().upper()
+                if v not in ("ON","OFF","TRUE","FALSE","1","0"):raise ValueError("ONまたはOFFを入力してください")
+                self.rows[row][key]=as_bool(v)
+            self.active_row=row;self.active_col=key;self.refresh()
+            if key not in FIELDS[2:]:self.show_cell_focus(row,key)
+        except ValueError as e:messagebox.showerror("入力エラー",str(e),parent=self.w)
+    def begin_cell_edit(self,event):
+        row_id=self.tree.identify_row(event.y);key=self.column_at(event)
+        if not row_id or not key or key=="step":return
+        if key in FIELDS[2:]:self.toggle_bool_cell(int(row_id),key)
+        else:self.begin_edit_at(int(row_id),key)
+    def toggle_bool_cell(self,row,key):
+        if key in UNCONNECTED_FIELDS:return "break"
+        self.rows[row][key]=not bool(self.rows[row][key]);self.active_row=row;self.active_col=key;self.tree.set(str(row),key,"ON" if self.rows[row][key] else "OFF");self.restyle_value_colors();return "break"
+    def begin_edit_at(self,row,key):
+        row_id=str(row);self.active_col=key;self.active_row=row;self.clear_cell_focus();self.tree.selection_remove(self.tree.selection());b=self.tree.bbox(row_id,key)
+        if not b:return
+        if self.editor:self.editor.destroy()
+        x,y,w,h=b;current=self.tree.set(row_id,key)
+        if key in FIELDS[2:]:return self.toggle_bool_cell(row,key)
+        else:
+            e=tk.Entry(self.tree,bg="#eef3f8",fg="#111820",insertbackground="#111820",relief="solid");e.insert(0,current);e.select_range(0,"end");e.bind("<Return>",lambda _e:self.finish_edit(row,key,e.get()));e.bind("<FocusOut>",lambda _e:self.finish_edit(row,key,e.get()));e.bind("<Escape>",lambda _e:e.destroy())
+        self.editor=e;e.place(x=x,y=y,width=w,height=h);e.focus_set()
+    def finish_edit(self,row,key,value):
+        if self.editor:self.editor.destroy();self.editor=None
+        self.set_cell(row,key,value)
+    def copy_cell(self,_event=None):
+        i=self.active_row
+        if i is None:return "break"
+        if self.active_col=="step":
+            self.copied_row=dict(self.rows[i]);value="PLANE_STEP_ROW\t"+json.dumps(self.copied_row,ensure_ascii=False);self.w.clipboard_clear();self.w.clipboard_append(value);return "break"
+        value=self.tree.set(str(i),self.active_col);self.w.clipboard_clear();self.w.clipboard_append(value);return "break"
+    def paste_cell(self,_event=None):
+        i=self.active_row
+        if i is None:return "break"
+        if self.active_col in UNCONNECTED_FIELDS:return "break"
+        if self.active_col=="step":
+            row=None
+            try:
+                value=self.w.clipboard_get()
+                if value.startswith("PLANE_STEP_ROW\t"):row=json.loads(value.split("\t",1)[1])
+            except (tk.TclError,json.JSONDecodeError):pass
+            if row is None and self.copied_row is not None:row=dict(self.copied_row)
+            if row is not None:
+                self.rows.insert(i+1,dict(row));new=i+1;self.refresh();self.active_row=new;self.active_col="step";self.tree.selection_set(str(new));self.tree.focus(str(new));self.tree.see(str(new));self.schedule_value_colors()
+            return "break"
+        try:self.set_cell(i,self.active_col,self.w.clipboard_get())
+        except tk.TclError:pass
+        return "break"
+    def add(self):
+        i=self.selected()
+        if i is None:self.rows.append({"time":0.0,**defaults()});new=len(self.rows)-1
+        else:self.rows.insert(i+1,dict(self.rows[i]));new=i+1
+        self.refresh();self.tree.selection_set(str(new));self.tree.focus(str(new));self.tree.see(str(new))
+    def duplicate(self):
+        i=self.selected()
+        if i is not None:self.rows.insert(i+1,dict(self.rows[i]));self.refresh();self.tree.selection_set(str(i+1))
+    def delete(self):
+        i=self.selected()
+        if i is not None:self.rows.pop(i);self.refresh()
+    def import_(self):
+        p=filedialog.askopenfilename(parent=self.w,filetypes=[("TXT","*.txt")]);
+        if p:
+            try:self.rows=load_timeline(p);self.path=p;self.refresh()
+            except Exception as e:messagebox.showerror("読込エラー",str(e),parent=self.w)
+    def save(self):
+        if not self.path:return self.save_as()
+        save_timeline(self.path,self.rows);messagebox.showinfo("保存","保存しました",parent=self.w)
+    def save_as(self):
+        p=filedialog.asksaveasfilename(parent=self.w,defaultextension=".txt",filetypes=[("TXT","*.txt")]);
+        if p:self.path=p;self.save()
+    def apply(self):
+        if not self.rows:return
+        self.app.timeline=sorted((dict(r) for r in self.rows),key=lambda r:r["time"]);self.app.timeline_path=self.path;self.app.refresh_step_overview();self.app.save_cfg();self.app.apply_timeline(self.app.position(),True);self.app.log("エディターのタイムラインを反映");self.w.destroy()
+
+if __name__=="__main__":
+    root=tk.Tk();App(root);root.mainloop()

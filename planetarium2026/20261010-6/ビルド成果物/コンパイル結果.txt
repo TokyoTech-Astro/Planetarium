@@ -1,0 +1,16 @@
+20261010-6 コンパイル確認（2026-10-10）
+
+PlatformIO / Espressif32 6.10.0 / Arduino ESP32 2.0.17
+対象: Seeed Studio XIAO ESP32C3
+
+ライト基板: SUCCESS
+RAM: 37,620 / 327,680 bytes (11.5%)
+Flash: 710,224 / 1,310,720 bytes (54.2%)
+
+統括・モーター基板: SUCCESS
+RAM: 37,580 / 327,680 bytes (11.5%)
+Flash: 730,040 / 1,310,720 bytes (55.7%)
+
+各フォルダにfirmware.bin、firmware.elf、bootloader.bin、partitions.binを保存。
+基板への書き込みと実機でのフェード確認は未実施。
+UIの予定角度計算・0°復帰指令・停止時の再生抑止など5件のテスト成功。
